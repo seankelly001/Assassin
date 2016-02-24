@@ -114,6 +114,7 @@ public class GameMapActivity extends FragmentActivity implements OnMapReadyCallb
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+
         // Add a marker in Sydney and move the camera
         /*
         LatLng sydney = new LatLng(-34, 151);
@@ -251,7 +252,7 @@ public class GameMapActivity extends FragmentActivity implements OnMapReadyCallb
             double x2 = dcuL.getLatitude();
             double y2 = dcuL.getLongitude();
             double distance = euclidean_distance(x1, y1, x2, y2);
-            toast("distance:" + distance);
+            //toast("distance:" + distance);
         }
 
         else {
@@ -272,20 +273,18 @@ public class GameMapActivity extends FragmentActivity implements OnMapReadyCallb
     private Location getLocation() {
 
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
+
             Toast.makeText(this, "NULLLLL", Toast.LENGTH_LONG).show();
             return null;
         }
-        mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
-                mGoogleApiClient);
+        else {
 
-        return mLastLocation;
+            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                    mGoogleApiClient);
+
+            return mLastLocation;
+        }
+
     }
 
 
