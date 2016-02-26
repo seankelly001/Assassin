@@ -1,4 +1,4 @@
-package ie.dcu.kelly224.sean.assassin;
+package com.seankelly001.assassin;
 
 import android.app.Application;
 import android.test.ApplicationTestCase;
