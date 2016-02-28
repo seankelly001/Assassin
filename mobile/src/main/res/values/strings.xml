@@ -1,8 +1,9 @@
 <resources>
     <string name="app_id">716536427274</string>
+    <string name="google_app_id">7892826</string>
     <string name="app_name">Assassin</string>
     <string name="title_activity_game_map">Game Map</string>
-    <string name="title_activity_main">MainActivity</string>
+    <string name="title_activity_main">Assassin</string>
 
 
     <!-- Google stuff -->
