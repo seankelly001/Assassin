@@ -1,25 +1,21 @@
 package com.seankelly001.assassin;
 
-/* Copyright (C) 2013 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
+        import android.Manifest;
         import android.app.Activity;
         import android.content.Context;
         import android.content.Intent;
+        import android.content.pm.PackageManager;
+        import android.hardware.GeomagneticField;
+        import android.hardware.Sensor;
+        import android.hardware.SensorEvent;
+        import android.hardware.SensorEventListener;
+        import android.hardware.SensorManager;
+        import android.location.Location;
+        import android.location.LocationListener;
         import android.os.Bundle;
         import android.os.Handler;
+        import android.support.v4.app.ActivityCompat;
+        import android.support.v4.app.FragmentActivity;
         import android.util.Log;
         import android.view.KeyEvent;
         import android.view.View;
@@ -45,12 +41,19 @@ package com.seankelly001.assassin;
         import com.google.android.gms.games.multiplayer.realtime.RoomConfig;
         import com.google.android.gms.games.multiplayer.realtime.RoomStatusUpdateListener;
         import com.google.android.gms.games.multiplayer.realtime.RoomUpdateListener;
+        import com.google.android.gms.location.LocationServices;
+        import com.google.android.gms.maps.GoogleMap;
+        import com.google.android.gms.maps.OnMapReadyCallback;
+        import com.google.android.gms.maps.SupportMapFragment;
+        import com.google.android.gms.maps.model.LatLng;
+        import com.google.android.gms.maps.model.Marker;
         import com.google.android.gms.plus.Plus;
 
         import com.google.example.games.basegameutils.BaseGameUtils;
 
+        import org.apache.commons.lang3.ArrayUtils;
 
-
+        import java.nio.ByteBuffer;
         import java.util.ArrayList;
         import java.util.HashMap;
         import java.util.HashSet;
@@ -58,29 +61,13 @@ package com.seankelly001.assassin;
         import java.util.Map;
         import java.util.Set;
 
-/**
- * Button Clicker 2000. A minimalistic game showing the multiplayer features of
- * the Google Play game services API. The objective of this game is clicking a
- * button. Whoever clicks the button the most times within a 20 second interval
- * wins. It's that simple. This game can be played with 2, 3 or 4 players. The
- * code is organized in sections in order to make understanding as clear as
- * possible. We start with the integration section where we show how the game
- * is integrated with the Google Play game services API, then move on to
- * game-specific UI and logic.
- *
- * INSTRUCTIONS: To run this sample, please set up
- * a project in the Developer Console. Then, place your app ID on
- * res/values/ids.xml. Also, change the package name to the package name you
- * used to create the client ID in Developer Console. Make sure you sign the
- * APK with the certificate whose fingerprint you entered in Developer Console
- * when creating your Client Id.
- *
- * @author Bruno Oliveira (btco), 2013-04-26
- */
-public class MainActivity extends Activity
+
+public class MainActivity extends FragmentActivity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener, RealTimeMessageReceivedListener,
-        RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener {
+        RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener,
+        OnMapReadyCallback, LocationListener, SensorEventListener
+{
 
     /*
      * API INTEGRATION SECTION. This section contains the code that integrates
@@ -131,6 +118,33 @@ public class MainActivity extends Activity
     // Message buffer for sending messages
     byte[] mMsgBuf = new byte[2];
 
+    private boolean game_started = false;
+
+
+    //==============================================================================================
+    //MAP STUFF
+    private GoogleMap mMap;
+   // private GoogleApiClient mGoogleApiClient = null;
+    private Location mLastLocation;
+
+    private int zoom_level = 15;
+    private GeomagneticField geoField;
+    private LocationListener listener;
+
+    private TextView magneticX;
+    private TextView magneticY;
+    private TextView magneticZ;
+    private SensorManager sensorManager = null;
+
+    private float mDeclination;
+    private float old_heading = 0;
+
+    private Marker arrow_marker;
+    private Marker direction_marker;
+    //==============================================================================================
+
+
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -140,6 +154,7 @@ public class MainActivity extends Activity
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
                 .addApi(Plus.API).addScope(Plus.SCOPE_PLUS_LOGIN)
                 .addApi(Games.API).addScope(Games.SCOPE_GAMES)
                 .build();
@@ -149,8 +164,16 @@ public class MainActivity extends Activity
             findViewById(id).setOnClickListener(this);
         }
 
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorManager.registerListener(this,
+                sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
+                SensorManager.SENSOR_DELAY_GAME);
+
+        map_tools = new MapTools(mMap, mGoogleApiClient);
+
         Log.e("HEELLO", "test!");
     }
+
 
     @Override
     public void onClick(View v) {
@@ -212,8 +235,12 @@ public class MainActivity extends Activity
                 // (gameplay) user clicked the "click me" button
                 scoreOnePoint();
                 break;
+            case R.id.map_test_button:
+                startGame(true);
+                break;
         }
     }
+
 
     void startQuickGame() {
         // quick-start a game with 1 randomly selected opponent
@@ -229,6 +256,7 @@ public class MainActivity extends Activity
         resetGameVars();
         Games.RealTimeMultiplayer.create(mGoogleApiClient, rtmConfigBuilder.build());
     }
+
 
     @Override
     public void onActivityResult(int requestCode, int responseCode,
@@ -275,6 +303,7 @@ public class MainActivity extends Activity
         }
         super.onActivityResult(requestCode, responseCode, intent);
     }
+
 
     // Handle the result of the "Select players UI" we launched when the user clicked the
     // "Invite friends" button. We react by creating a room with those players.
@@ -333,6 +362,7 @@ public class MainActivity extends Activity
         acceptInviteToRoom(inv.getInvitationId());
     }
 
+
     // Accept the given invitation.
     void acceptInviteToRoom(String invId) {
         // accept the invitation
@@ -347,6 +377,7 @@ public class MainActivity extends Activity
         Games.RealTimeMultiplayer.join(mGoogleApiClient, roomConfigBuilder.build());
     }
 
+
     // Activity is going to the background. We have to leave the current room.
     @Override
     public void onStop() {
@@ -354,6 +385,8 @@ public class MainActivity extends Activity
 
         // if we're in a room, leave it.
         leaveRoom();
+
+        sensorManager.unregisterListener(this);
 
         // stop trying to keep the screen on
         stopKeepingScreenOn();
@@ -366,6 +399,7 @@ public class MainActivity extends Activity
         }
         super.onStop();
     }
+
 
     // Activity just got to the foreground. We switch to the wait screen because we will now
     // go through the sign-in flow (remember that, yes, every time the Activity comes back to the
@@ -384,6 +418,7 @@ public class MainActivity extends Activity
         super.onStart();
     }
 
+
     // Handle back key to make sure we cleanly leave a game if we are in the middle of one
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent e) {
@@ -393,6 +428,7 @@ public class MainActivity extends Activity
         }
         return super.onKeyDown(keyCode, e);
     }
+
 
     // Leave the room.
     void leaveRoom() {
@@ -408,6 +444,7 @@ public class MainActivity extends Activity
         }
     }
 
+
     // Show the waiting room UI to track the progress of other players as they enter the
     // room and get connected.
     void showWaitingRoom(Room room) {
@@ -422,6 +459,7 @@ public class MainActivity extends Activity
         startActivityForResult(i, RC_WAITING_ROOM);
     }
 
+
     // Called when we get an invitation to play a game. We react by showing that to the user.
     @Override
     public void onInvitationReceived(Invitation invitation) {
@@ -435,6 +473,7 @@ public class MainActivity extends Activity
         switchToScreen(mCurScreen); // This will show the invitation popup
     }
 
+
     @Override
     public void onInvitationRemoved(String invitationId) {
 
@@ -444,6 +483,7 @@ public class MainActivity extends Activity
         }
 
     }
+
 
     /*
      * CALLBACKS SECTION. This section shows how we implement the several games
@@ -471,15 +511,21 @@ public class MainActivity extends Activity
                 return;
             }
         }
-        switchToMainScreen();
 
+        if(mMap != null && map_tools != null) {
+            Location current_location = getLocation();
+            map_tools.updateMap(current_location);
+        }
+        switchToMainScreen();
     }
+
 
     @Override
     public void onConnectionSuspended(int i) {
         Log.d(TAG, "onConnectionSuspended() called. Trying to reconnect.");
         mGoogleApiClient.connect();
     }
+
 
     @Override
     public void onConnectionFailed(ConnectionResult connectionResult) {
@@ -499,6 +545,7 @@ public class MainActivity extends Activity
 
         switchToScreen(R.id.screen_sign_in);
     }
+
 
     // Called when we are connected to the room. We're not ready to play yet! (maybe not everybody
     // is connected yet).
@@ -520,6 +567,7 @@ public class MainActivity extends Activity
         Log.d(TAG, "<< CONNECTED TO ROOM>>");
     }
 
+
     // Called when we've successfully left the room (this happens a result of voluntarily leaving
     // via a call to leaveRoom(). If we get disconnected, we get onDisconnectedFromRoom()).
     @Override
@@ -529,6 +577,7 @@ public class MainActivity extends Activity
         switchToMainScreen();
     }
 
+
     // Called when we get disconnected from the room. We return to the main screen.
     @Override
     public void onDisconnectedFromRoom(Room room) {
@@ -536,11 +585,13 @@ public class MainActivity extends Activity
         showGameError();
     }
 
+
     // Show error message about game being cancelled and return to main screen.
     void showGameError() {
         BaseGameUtils.makeSimpleDialog(this, getString(R.string.game_problem));
         switchToMainScreen();
     }
+
 
     // Called when room has been created
     @Override
@@ -787,6 +838,7 @@ public class MainActivity extends Activity
             if (lobby_countdown_seconds <= 0) {
                 // finish game
                 Toast.makeText(this, "COUNTDOWN COMPLETE", Toast.LENGTH_SHORT).show();
+                startGame(true);
             }
         }
     }
@@ -806,27 +858,7 @@ public class MainActivity extends Activity
 //==================================================================================================
 
 
-    void startGame(boolean multiplayer) {
 
-        mMultiplayer = multiplayer;
-        updateScoreDisplay();
-        broadcastScore(false);
-        switchToScreen(R.id.screen_game);
-
-        findViewById(R.id.button_click_me).setVisibility(View.VISIBLE);
-
-        // run the gameTick() method every second to update the game.
-        final Handler h = new Handler();
-        h.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                if (mSecondsLeft <= 0)
-                    return;
-                gameTick();
-                h.postDelayed(this, 1000);
-            }
-        }, 1000);
-    }
 
 
 
@@ -870,6 +902,7 @@ public class MainActivity extends Activity
     // Participants who sent us their final score.
     Set<String> mFinishedParticipants = new HashSet<String>();
 
+
     // Called when we receive a real-time message from the network.
     // Messages in our game are made up of 2 bytes: the first one is 'F' or 'U'
     // indicating
@@ -881,7 +914,7 @@ public class MainActivity extends Activity
 
         byte[] buf = rtm.getMessageData();
         String sender = rtm.getSenderParticipantId();
-        Log.d(TAG, "Message received: " + (char) buf[0] + "/" + (int) buf[1]);
+        Log.e(TAG, "Message received: " + ArrayUtils.toString(buf));
 
         if (buf[0] == 'F' || buf[0] == 'U') {
             // score update.
@@ -949,6 +982,10 @@ public class MainActivity extends Activity
 
           //  Toast.makeText(this, "Player " + sender + " is " + ready_bool, Toast.LENGTH_LONG).show();
         }
+        else if(buf[0] == 'C') {
+
+            receiveCoordinateMessage(sender, buf);
+        }
     }
 
     // Broadcast my score to everybody else.
@@ -990,17 +1027,20 @@ public class MainActivity extends Activity
             R.id.button_accept_popup_invitation, R.id.button_invite_players,
             R.id.button_quick_game, R.id.button_see_invitations, R.id.button_sign_in,
             R.id.button_sign_out, R.id.button_click_me, R.id.button_single_player,
+            R.id.map_test_button
            // R.id.button_single_player_2
     };
 
     // This array lists all the individual screens our game has.
     final static int[] SCREENS = {
             R.id.screen_game, R.id.screen_main, R.id.screen_sign_in,
-            R.id.screen_wait, R.id.screen_lobby
+            R.id.screen_wait, R.id.screen_lobby, R.id.screen_map
     };
     int mCurScreen = -1;
 
     void switchToScreen(int screenId) {
+
+
         // make the requested screen visible; hide all others.
         for (int id : SCREENS) {
             findViewById(id).setVisibility(screenId == id ? View.VISIBLE : View.GONE);
@@ -1071,6 +1111,212 @@ public class MainActivity extends Activity
         }
     }
 
+    //==============================================================================================
+    //GAME MAP STUFF
+    private MapTools map_tools;
+
+    void startGame(boolean multiplayer) {
+
+        game_started = true;
+        //map_tools = new MapTools(mMap, mGoogleApiClient);
+
+        Log.e("######", "Switching to map screen");
+        switchToScreen(R.id.screen_map);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+            .findFragmentById(R.id.map);
+        mapFragment.getMapAsync(this);
+
+
+        sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
+        sensorManager.registerListener(this,
+                sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
+                SensorManager.SENSOR_DELAY_GAME);
+
+
+        //send data periodically
+        final boolean game_in_progress = true;
+        final int milliseconds = 1000;
+
+        final Handler h = new Handler();
+        h.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                if (!game_in_progress)
+                    return;
+                sendCoordinatesMessage();
+                h.postDelayed(this, milliseconds);
+            }
+        }, milliseconds);
+    }
+
+
+    private void sendCoordinatesMessage() {
+
+        Location current_location = getLocation();
+        byte[] message_bytes = createCoordinateMessage(current_location);
+
+
+
+        for (Participant p : mParticipants) {
+            if (p.getParticipantId().equals(mMyId))
+                continue;
+            if (p.getStatus() != Participant.STATUS_JOINED)
+                continue;
+
+            Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                    mRoomId, p.getParticipantId());
+
+        }
+    }
+
+
+    private byte[] createCoordinateMessage(Location location) {
+
+        double lat = location.getLatitude();
+        double lng = location.getLongitude();
+
+        byte[] iden_bytes = {'C'};
+        byte[] lat_bytes = doubleToByteArray(lat);
+        byte[] lng_bytes = doubleToByteArray(lng);
+
+        byte[] concat_bytes = ArrayUtils.addAll(iden_bytes, ArrayUtils.addAll(lat_bytes, lng_bytes));
+
+        return concat_bytes;
+    }
+
+
+    private void receiveCoordinateMessage(String sender, byte[] message_bytes) {
+
+        Log.e("------", "RECEIVED COORINATE MESSAGE");
+        Log.e("------", "MESSAGE LENGTH:" + message_bytes.length);
+        byte[] lat_bytes = ArrayUtils.subarray(message_bytes, 1, 9);
+        byte[] lng_bytes = ArrayUtils.subarray(message_bytes, 9, 17);
+
+        Log.e("------", "lat bytes len:" + lat_bytes.length);
+        double lat = byteArraytoDouble(lat_bytes);
+        double lng = byteArraytoDouble(lng_bytes);
+
+        if(map_tools != null && game_started) {
+            map_tools.setDestCoordinates(lat, lng);
+        }
+    }
+
+
+    public static byte[] doubleToByteArray(double value) {
+        byte[] bytes = new byte[8];
+        ByteBuffer.wrap(bytes).putDouble(value);
+        return bytes;
+    }
+
+
+    public static double byteArraytoDouble(byte[] bytes) {
+        return ByteBuffer.wrap(bytes).getDouble();
+    }
+
+
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+
+        mMap = googleMap;
+        Log.e("######", "MAP READY");
+        Location current_location = getLocation();
+        map_tools = new MapTools(mMap, mGoogleApiClient);
+        map_tools.updateMap(current_location);
+    }
+
+
+    @Override
+    protected void onPause() {
+
+        // Unregister the listener
+        sensorManager.unregisterListener(this);
+        super.onPause();
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        sensorManager.registerListener(this,
+                sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
+                SensorManager.SENSOR_DELAY_NORMAL);
+    }
+
+
+
+    private Location getLocation() {
+
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+            Toast.makeText(this, "NULLLLL", Toast.LENGTH_LONG).show();
+            return null;
+        }
+        else {
+
+            mLastLocation = LocationServices.FusedLocationApi.getLastLocation(
+                    mGoogleApiClient);
+
+            return mLastLocation;
+        }
+
+    }
+
+    //LocationListener Method
+//--------------------------------------------------------------------------------------------------
+    @Override
+    public void onLocationChanged(Location current_location) {
+
+        Toast.makeText(this, "Location changed", Toast.LENGTH_LONG);
+
+        if(map_tools != null) {
+            map_tools.updateMap(current_location);
+        }
+    }
+
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+
+        Toast.makeText(this, "status changed", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onProviderEnabled(String provider) {
+
+        Toast.makeText(this, "provider enabled", Toast.LENGTH_LONG).show();
+    }
+
+    @Override
+    public void onProviderDisabled(String provider) {
+
+    }
+
+//--------------------------------------------------------------------------------------------------
+
+
+    //====================================================================================
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+
+        if(map_tools != null) {
+            synchronized (this) {
+                if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
+
+                    map_tools.onSensorChanged(sensorEvent);
+                }
+            }
+        }
+    }
+
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+
+    }
+
+
+    //==============================================================================================
     /*
      * MISC SECTION. Miscellaneous methods.
      */

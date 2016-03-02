@@ -44,8 +44,6 @@ public class GameMapActivity extends FragmentActivity implements OnMapReadyCallb
     private LocationListener listener;
 
     private TextView magneticX;
-    private TextView magneticY;
-    private TextView magneticZ;
     private SensorManager sensorManager = null;
 
     private float mDeclination;
@@ -87,9 +85,6 @@ public class GameMapActivity extends FragmentActivity implements OnMapReadyCallb
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         // Capture magnetic sensor related view elements
         magneticX = (TextView) findViewById(R.id.valMag_X);
-        magneticY = (TextView) findViewById(R.id.valMag_Y);
-        magneticZ = (TextView) findViewById(R.id.valMag_Z);
-
         // Register magnetic sensor
       /*  sensorManager.registerListener(this,
                 sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD),

@@ -33,4 +33,7 @@
     <string name="is_inviting_you">is challenging you to a game!</string>
     <string name="signin_other_error">There was an issue with sign in. Please try again later.</string>
 
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+
 </resources>
