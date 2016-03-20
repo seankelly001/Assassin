@@ -1,23 +1,23 @@
 package com.seankelly001.assassin;
 
-import android.Manifest;
 import android.content.Context;
-import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LevelListDrawable;
 import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.location.Location;
 import android.location.LocationListener;
-import android.support.v4.app.ActivityCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
@@ -34,19 +34,21 @@ public class MapTools {
 
     private Location mLastLocation;
     private int zoom_level = 15;
-    private GeomagneticField geoField;
-    private LocationListener listener;
     private float old_heading = 0;
     private Marker arrow_marker;
     private Marker direction_marker;
     private float mDeclination;
     private Location destLocation;
     private boolean destReceived = false;
+    private final boolean ROTATION_VECTOR_SUPPORTED;
+    private final Context context;
 
-    public MapTools(GoogleMap mMap, GoogleApiClient mGoogleApiClient) {
+    public MapTools(Context context, GoogleMap mMap, GoogleApiClient mGoogleApiClient, boolean ROTATION_VECTOR_SUPPORTED) {
 
+        this.context = context;
         this.mMap = mMap;
         this.mGoogleApiClient = mGoogleApiClient;
+        this.ROTATION_VECTOR_SUPPORTED = ROTATION_VECTOR_SUPPORTED;
         destLocation = new Location("");
     }
 
@@ -56,6 +58,7 @@ public class MapTools {
         destLocation.setLatitude(lat);
         destLocation.setLongitude(lng);
         destReceived = true;
+
     }
 
 
@@ -66,7 +69,7 @@ public class MapTools {
 
     public void updateMap(Location current_location) {
 
-        Log.e("#######","UPDATING MAP");
+        Log.e("#######", "UPDATING MAP");
 
         if(mMap == null)  Log.e("#######","MAP IS NULL");
         if(current_location == null)  Log.e("#######","LOCATION IS NULL");
@@ -82,15 +85,33 @@ public class MapTools {
 
     private void updateMapMarkers(Location current_location) {
 
+
         LatLng current_lat_lang = new LatLng(current_location.getLatitude(), current_location.getLongitude());
 
         if(arrow_marker == null) {
 
-            arrow_marker = mMap.addMarker(
-                    new MarkerOptions()
-                            .position(current_lat_lang)
-                            .title("Current Location")
-                            .icon(BitmapDescriptorFactory.fromResource(R.drawable.arrow3)));
+            Bitmap small_b;
+            if(ROTATION_VECTOR_SUPPORTED) {
+
+                Drawable d = context.getResources().getDrawable(R.drawable.arrow);
+                BitmapDrawable bd = (BitmapDrawable) d;
+                Bitmap b = bd.getBitmap();
+                small_b = Bitmap.createScaledBitmap(b, b.getWidth() / 6, b.getHeight() / 6, false);
+            }
+            else {
+
+                Drawable d = context.getResources().getDrawable(R.drawable.position_icon_orange);
+                BitmapDrawable bd = (BitmapDrawable) d;
+                Bitmap b = bd.getBitmap();
+                small_b = Bitmap.createScaledBitmap(b, b.getWidth() / 20, b.getHeight() / 20, false);
+            }
+
+                arrow_marker = mMap.addMarker(
+                        new MarkerOptions()
+                                .position(current_lat_lang)
+                                .title("Current Location")
+                                .icon(BitmapDescriptorFactory.fromBitmap(small_b)));
+
         }
         else {
 

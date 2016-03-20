@@ -141,7 +141,10 @@ public class MainActivity extends FragmentActivity
 
     private Marker arrow_marker;
     private Marker direction_marker;
+
+    private  boolean ROTATION_VECTOR_SUPPORTED;
     //==============================================================================================
+
 
 
 
@@ -165,13 +168,12 @@ public class MainActivity extends FragmentActivity
         }
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
-        sensorManager.registerListener(this,
+        ROTATION_VECTOR_SUPPORTED = sensorManager.registerListener(this,
                 sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
                 SensorManager.SENSOR_DELAY_GAME);
 
-        map_tools = new MapTools(mMap, mGoogleApiClient);
-
         Log.e("HEELLO", "test!");
+
     }
 
 
@@ -255,6 +257,8 @@ public class MainActivity extends FragmentActivity
         keepScreenOn();
         resetGameVars();
         Games.RealTimeMultiplayer.create(mGoogleApiClient, rtmConfigBuilder.build());
+
+
     }
 
 
@@ -755,8 +759,6 @@ public class MainActivity extends FragmentActivity
                 ready_players_map.put(mMyId, ready);
 
                 Context context1 = v.getContext();
-                Toast.makeText(context1, "OUTER CLICK", Toast.LENGTH_LONG).show();
-
                 checkLobbyState();
 
                 for (Participant p : mParticipants) {
@@ -1156,16 +1158,17 @@ public class MainActivity extends FragmentActivity
         byte[] message_bytes = createCoordinateMessage(current_location);
 
 
+        if(mParticipants != null) {
+            for (Participant p : mParticipants) {
+                if (p.getParticipantId().equals(mMyId))
+                    continue;
+                if (p.getStatus() != Participant.STATUS_JOINED)
+                    continue;
 
-        for (Participant p : mParticipants) {
-            if (p.getParticipantId().equals(mMyId))
-                continue;
-            if (p.getStatus() != Participant.STATUS_JOINED)
-                continue;
+                Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                        mRoomId, p.getParticipantId());
 
-            Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
-                    mRoomId, p.getParticipantId());
-
+            }
         }
     }
 
@@ -1198,6 +1201,8 @@ public class MainActivity extends FragmentActivity
 
         if(map_tools != null && game_started) {
             map_tools.setDestCoordinates(lat, lng);
+            Location l = getLocation();
+            map_tools.updateMap(l);
         }
     }
 
@@ -1221,7 +1226,7 @@ public class MainActivity extends FragmentActivity
         mMap = googleMap;
         Log.e("######", "MAP READY");
         Location current_location = getLocation();
-        map_tools = new MapTools(mMap, mGoogleApiClient);
+        map_tools = new MapTools(this, mMap, mGoogleApiClient, ROTATION_VECTOR_SUPPORTED);
         map_tools.updateMap(current_location);
     }
 
