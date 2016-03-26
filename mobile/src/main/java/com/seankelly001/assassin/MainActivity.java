@@ -1,72 +1,72 @@
 package com.seankelly001.assassin;
 
-        import android.Manifest;
-        import android.app.Activity;
-        import android.content.Context;
-        import android.content.Intent;
-        import android.content.pm.PackageManager;
-        import android.hardware.GeomagneticField;
-        import android.hardware.Sensor;
-        import android.hardware.SensorEvent;
-        import android.hardware.SensorEventListener;
-        import android.hardware.SensorManager;
-        import android.location.Location;
-        import android.location.LocationListener;
-        import android.os.Bundle;
-        import android.os.Handler;
-        import android.support.v4.app.ActivityCompat;
-        import android.support.v4.app.FragmentActivity;
-        import android.util.Log;
-        import android.view.KeyEvent;
-        import android.view.View;
-        import android.view.WindowManager;
-        import android.widget.ArrayAdapter;
-        import android.widget.CheckBox;
-        import android.widget.ListView;
-        import android.widget.TextView;
-        import android.widget.Toast;
+import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
+import android.location.Criteria;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
+import android.os.Handler;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.app.FragmentActivity;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.ArrayAdapter;
+import android.widget.CheckBox;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
-        import com.google.android.gms.common.ConnectionResult;
-        import com.google.android.gms.common.api.GoogleApiClient;
-        import com.google.android.gms.games.Games;
-        import com.google.android.gms.games.GamesStatusCodes;
-        import com.google.android.gms.games.GamesActivityResultCodes;
-        import com.google.android.gms.games.multiplayer.Invitation;
-        import com.google.android.gms.games.multiplayer.Multiplayer;
-        import com.google.android.gms.games.multiplayer.OnInvitationReceivedListener;
-        import com.google.android.gms.games.multiplayer.Participant;
-        import com.google.android.gms.games.multiplayer.realtime.RealTimeMessage;
-        import com.google.android.gms.games.multiplayer.realtime.RealTimeMessageReceivedListener;
-        import com.google.android.gms.games.multiplayer.realtime.Room;
-        import com.google.android.gms.games.multiplayer.realtime.RoomConfig;
-        import com.google.android.gms.games.multiplayer.realtime.RoomStatusUpdateListener;
-        import com.google.android.gms.games.multiplayer.realtime.RoomUpdateListener;
-        import com.google.android.gms.location.LocationServices;
-        import com.google.android.gms.maps.GoogleMap;
-        import com.google.android.gms.maps.OnMapReadyCallback;
-        import com.google.android.gms.maps.SupportMapFragment;
-        import com.google.android.gms.maps.model.LatLng;
-        import com.google.android.gms.maps.model.Marker;
-        import com.google.android.gms.plus.Plus;
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.games.Games;
+import com.google.android.gms.games.GamesStatusCodes;
+import com.google.android.gms.games.GamesActivityResultCodes;
+import com.google.android.gms.games.multiplayer.Invitation;
+import com.google.android.gms.games.multiplayer.Multiplayer;
+import com.google.android.gms.games.multiplayer.OnInvitationReceivedListener;
+import com.google.android.gms.games.multiplayer.Participant;
+import com.google.android.gms.games.multiplayer.realtime.RealTimeMessage;
+import com.google.android.gms.games.multiplayer.realtime.RealTimeMessageReceivedListener;
+import com.google.android.gms.games.multiplayer.realtime.Room;
+import com.google.android.gms.games.multiplayer.realtime.RoomConfig;
+import com.google.android.gms.games.multiplayer.realtime.RoomStatusUpdateListener;
+import com.google.android.gms.games.multiplayer.realtime.RoomUpdateListener;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.plus.Plus;
 
-        import com.google.example.games.basegameutils.BaseGameUtils;
+import com.google.example.games.basegameutils.BaseGameUtils;
 
-        import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
-        import java.nio.ByteBuffer;
-        import java.util.ArrayList;
-        import java.util.HashMap;
-        import java.util.HashSet;
-        import java.util.List;
-        import java.util.Map;
-        import java.util.Set;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 public class MainActivity extends FragmentActivity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener, RealTimeMessageReceivedListener,
         RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener,
-        OnMapReadyCallback, LocationListener, SensorEventListener
+        OnMapReadyCallback, SensorEventListener
 {
 
     /*
@@ -124,28 +124,19 @@ public class MainActivity extends FragmentActivity
     //==============================================================================================
     //MAP STUFF
     private GoogleMap mMap;
-   // private GoogleApiClient mGoogleApiClient = null;
     private Location mLastLocation;
-
-    private int zoom_level = 15;
-    private GeomagneticField geoField;
-    private LocationListener listener;
-
-    private TextView magneticX;
-    private TextView magneticY;
-    private TextView magneticZ;
     private SensorManager sensorManager = null;
-
-    private float mDeclination;
-    private float old_heading = 0;
-
-    private Marker arrow_marker;
-    private Marker direction_marker;
-
     private  boolean ROTATION_VECTOR_SUPPORTED;
     //==============================================================================================
 
+    //GAME STUFF
+    private Participant host, target, hunter;
+    private Location target_location;
+    //==============================================================================================
 
+    private LocationManager location_manager;
+    private LocationListener location_listener;
+    private String best_provider;
 
 
     @Override
@@ -172,6 +163,17 @@ public class MainActivity extends FragmentActivity
                 sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
                 SensorManager.SENSOR_DELAY_GAME);
 
+
+        //location_manager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+
+        /*
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        String best_provider = mgr.getBestProvider(criteria, false);
+        mgr.requestLocationUpdates(be);
+        */
+
+        registerLocationUpdates();
         Log.e("HEELLO", "test!");
 
     }
@@ -183,7 +185,7 @@ public class MainActivity extends FragmentActivity
 
         switch (v.getId()) {
             case R.id.button_single_player:
-           // case R.id.button_single_player_2:
+                // case R.id.button_single_player_2:
                 // play a single-player game
                 resetGameVars();
                 startLobby(false);
@@ -240,6 +242,9 @@ public class MainActivity extends FragmentActivity
             case R.id.map_test_button:
                 startGame(true);
                 break;
+            case R.id.kill_button:
+                attemptKill();
+                break;
         }
     }
 
@@ -257,8 +262,6 @@ public class MainActivity extends FragmentActivity
         keepScreenOn();
         resetGameVars();
         Games.RealTimeMultiplayer.create(mGoogleApiClient, rtmConfigBuilder.build());
-
-
     }
 
 
@@ -267,7 +270,12 @@ public class MainActivity extends FragmentActivity
                                  Intent intent) {
         super.onActivityResult(requestCode, responseCode, intent);
 
+        Log.e("######", "REQUEST CODE: " + requestCode);
+        Log.e("######", "RESPONSE CODE: " + responseCode);
+
         switch (requestCode) {
+
+
             case RC_SELECT_PLAYERS:
                 // we got the result from the "select players" UI -- ready to create the room
                 handleSelectPlayersResult(responseCode, intent);
@@ -279,9 +287,10 @@ public class MainActivity extends FragmentActivity
                 break;
             case RC_WAITING_ROOM:
                 // we got the result from the "waiting room" UI.
+                Log.e("######", "WAITING ROOM CODE");
                 if (responseCode == Activity.RESULT_OK) {
                     // ready to start playing
-                    Log.d(TAG, "Starting game (waiting room returned OK).");
+                    Log.e("######", "Starting game (waiting room returned OK).");
                     startLobby(true);
                 } else if (responseCode == GamesActivityResultCodes.RESULT_LEFT_ROOM) {
                     // player indicated that they want to leave the room
@@ -655,6 +664,7 @@ public class MainActivity extends FragmentActivity
 
     @Override
     public void onP2PDisconnected(String participant) {
+        makeToast("Player has disconnected (2)");
     }
 
     @Override
@@ -689,6 +699,7 @@ public class MainActivity extends FragmentActivity
     @Override
     public void onPeersDisconnected(Room room, List<String> peers) {
         updateRoom(room);
+        makeToast("Player has disconnected (1)");
     }
 
     void updateRoom(Room room) {
@@ -727,7 +738,7 @@ public class MainActivity extends FragmentActivity
 
     private boolean all_players_ready = false;
     private boolean lobby_countdown_begun = false;
-    private int lobby_countdown_seconds = 10;
+    private int lobby_countdown_seconds = 3;
 
 
     void startLobby(boolean multiplayer) {
@@ -773,8 +784,8 @@ public class MainActivity extends FragmentActivity
 
                     Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, mMsgBuf,
                             mRoomId, p.getParticipantId());
-
                 }
+
             }
         };
 
@@ -782,8 +793,11 @@ public class MainActivity extends FragmentActivity
         lobby_player_list_adapter = new LobbyPlayerListAdapter(this, mParticipants, ready_players_map, mMyId, listener);
         lobby_player_list_view.setAdapter(lobby_player_list_adapter);
 
-
+        host = mParticipants.get(0);
+        String host_name = host.getDisplayName();
+        Toast.makeText(this, "HOST IS: " + host_name, Toast.LENGTH_LONG).show();
     }
+
 
     private void checkLobbyState() {
 
@@ -800,14 +814,15 @@ public class MainActivity extends FragmentActivity
         }
     }
 
+
     public void stopLobbyCountdown() {
 
         lobby_countdown_view.setVisibility(View.INVISIBLE);
-        lobby_countdown_view.setText("0:10");
-        lobby_countdown_seconds = 10;
+        lobby_countdown_view.setText("0:03");
+        lobby_countdown_seconds = 3;
         lobby_countdown_begun = false;
-
     }
+
 
     public void startLobbyCountdown() {
 
@@ -982,13 +997,18 @@ public class MainActivity extends FragmentActivity
                 checkLobbyState();
             }
 
-          //  Toast.makeText(this, "Player " + sender + " is " + ready_bool, Toast.LENGTH_LONG).show();
+            //  Toast.makeText(this, "Player " + sender + " is " + ready_bool, Toast.LENGTH_LONG).show();
         }
         else if(buf[0] == 'C') {
 
             receiveCoordinateMessage(sender, buf);
         }
+        else if(buf[0] == 'G') {
+
+            receivedGameStateMessage(sender, buf);
+        }
     }
+
 
     // Broadcast my score to everybody else.
     void broadcastScore(boolean finalScore) {
@@ -1025,23 +1045,24 @@ public class MainActivity extends FragmentActivity
 
     // This array lists everything that's clickable, so we can install click
     // event handlers.
-    final static int[] CLICKABLES = {
+    private final static int[] CLICKABLES = {
             R.id.button_accept_popup_invitation, R.id.button_invite_players,
             R.id.button_quick_game, R.id.button_see_invitations, R.id.button_sign_in,
             R.id.button_sign_out, R.id.button_click_me, R.id.button_single_player,
-            R.id.map_test_button
-           // R.id.button_single_player_2
+            R.id.map_test_button, R.id.kill_button
+            // R.id.button_single_player_2
     };
 
+
     // This array lists all the individual screens our game has.
-    final static int[] SCREENS = {
+    private final static int[] SCREENS = {
             R.id.screen_game, R.id.screen_main, R.id.screen_sign_in,
             R.id.screen_wait, R.id.screen_lobby, R.id.screen_map
     };
     int mCurScreen = -1;
 
-    void switchToScreen(int screenId) {
 
+    private void switchToScreen(int screenId) {
 
         // make the requested screen visible; hide all others.
         for (int id : SCREENS) {
@@ -1064,7 +1085,8 @@ public class MainActivity extends FragmentActivity
         findViewById(R.id.invitation_popup).setVisibility(showInvPopup ? View.VISIBLE : View.GONE);
     }
 
-    void switchToMainScreen() {
+
+    private void switchToMainScreen() {
         if (mGoogleApiClient != null && mGoogleApiClient.isConnected()) {
             switchToScreen(R.id.screen_main);
         }
@@ -1073,10 +1095,12 @@ public class MainActivity extends FragmentActivity
         }
     }
 
+
     // updates the label that shows my score
     void updateScoreDisplay() {
         ((TextView) findViewById(R.id.my_score)).setText(formatScore(mScore));
     }
+
 
     // formats a score as a three-digit number
     String formatScore(int i) {
@@ -1085,6 +1109,7 @@ public class MainActivity extends FragmentActivity
         String s = String.valueOf(i);
         return s.length() == 1 ? "00" + s : s.length() == 2 ? "0" + s : s;
     }
+
 
     // updates the screen with the scores from our peers
     void updatePeerScoresDisplay() {
@@ -1117,7 +1142,13 @@ public class MainActivity extends FragmentActivity
     //GAME MAP STUFF
     private MapTools map_tools;
 
-    void startGame(boolean multiplayer) {
+    private boolean isHost() {
+
+        return host.getParticipantId().equals(mMyId);
+    }
+
+
+    private void startGame(boolean multiplayer) {
 
         game_started = true;
         //map_tools = new MapTools(mMap, mGoogleApiClient);
@@ -1125,7 +1156,7 @@ public class MainActivity extends FragmentActivity
         Log.e("######", "Switching to map screen");
         switchToScreen(R.id.screen_map);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
-            .findFragmentById(R.id.map);
+                .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
 
@@ -1135,9 +1166,41 @@ public class MainActivity extends FragmentActivity
                 SensorManager.SENSOR_DELAY_GAME);
 
 
+        if(isHost()) {
+
+            Log.e("#####", "AM HOST");
+            int num_participants = mParticipants.size();
+            target = mParticipants.get(1);
+            hunter = mParticipants.get(mParticipants.size() - 1);
+
+            Toast.makeText(this, "NUM PARTICIPANTS: " + num_participants, Toast.LENGTH_LONG).show();
+            Log.e("#####", "NUM PARTICIPANTS: " + num_participants);
+
+            for(int i = 1; i < num_participants; i++) {
+
+                Participant current = mParticipants.get(i);
+                Participant current_target = mParticipants.get((i+1)%num_participants);
+                Participant current_hunter = mParticipants.get(i-1);
+
+                String message_string = current_target.getParticipantId() + "~" + current_hunter.getParticipantId();
+                byte[] iden_bytes = {'G'};
+                byte[] info_bytes = message_string.getBytes(Charset.forName("UTF-8"));
+                byte[] message_bytes = ArrayUtils.addAll(iden_bytes, info_bytes);
+                Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                        mRoomId, current.getParticipantId());
+
+                Log.e("######", "SENDING GAME STATE: " + message_bytes.toString());
+                Log.e("######", "TO: " + current.getParticipantId());
+                Log.e("######", "i: " + ""+ i);
+            }
+        }
+
         //send data periodically
         final boolean game_in_progress = true;
         final int milliseconds = 1000;
+
+
+
 
         final Handler h = new Handler();
         h.postDelayed(new Runnable() {
@@ -1152,13 +1215,33 @@ public class MainActivity extends FragmentActivity
     }
 
 
+    private void receivedGameStateMessage(String sender_id, byte[] message_bytes) {
+
+        Log.e("######", "RECEIVED GAME STATE MESSAGE");
+        Log.e("######", "SENDER: " + sender_id);
+        Log.e("######", "HOST: " + host.getParticipantId());
+
+        byte[] game_state_bytes = ArrayUtils.subarray(message_bytes, 1, message_bytes.length);
+        String game_state_string = new String(game_state_bytes, Charset.forName("UTF-8"));
+
+        Log.e("######", "GAME STATE MESSAGE: " + game_state_string);
+
+        String[] game_state_array = game_state_string.split("~");
+        String target_id = game_state_array[0];
+        String hunter_id = game_state_array[1];
+
+        Log.e("#####", "TARGET: " + target_id);
+        Log.e("#####", "HUNTER: " + hunter_id);
+    }
+
+
     private void sendCoordinatesMessage() {
 
         Location current_location = getLocation();
         byte[] message_bytes = createCoordinateMessage(current_location);
 
 
-        if(mParticipants != null) {
+        if(mParticipants != null && mRoom != null) {
             for (Participant p : mParticipants) {
                 if (p.getParticipantId().equals(mMyId))
                     continue;
@@ -1167,24 +1250,29 @@ public class MainActivity extends FragmentActivity
 
                 Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
                         mRoomId, p.getParticipantId());
-
             }
         }
     }
 
 
+
     private byte[] createCoordinateMessage(Location location) {
 
-        double lat = location.getLatitude();
-        double lng = location.getLongitude();
+        if(location != null) {
+            double lat = location.getLatitude();
+            double lng = location.getLongitude();
 
-        byte[] iden_bytes = {'C'};
-        byte[] lat_bytes = doubleToByteArray(lat);
-        byte[] lng_bytes = doubleToByteArray(lng);
+            byte[] iden_bytes = {'C'};
+            byte[] lat_bytes = doubleToByteArray(lat);
+            byte[] lng_bytes = doubleToByteArray(lng);
 
-        byte[] concat_bytes = ArrayUtils.addAll(iden_bytes, ArrayUtils.addAll(lat_bytes, lng_bytes));
+            byte[] concat_bytes = ArrayUtils.addAll(iden_bytes, ArrayUtils.addAll(lat_bytes, lng_bytes));
 
-        return concat_bytes;
+            return concat_bytes;
+        }
+        else {
+            return null;
+        }
     }
 
 
@@ -1200,9 +1288,31 @@ public class MainActivity extends FragmentActivity
         double lng = byteArraytoDouble(lng_bytes);
 
         if(map_tools != null && game_started) {
+
+            if(target_location == null) {
+                target_location = new Location("");
+            }
+            target_location.setLatitude(lat);
+            target_location.setLongitude(lng);
             map_tools.setDestCoordinates(lat, lng);
             Location l = getLocation();
             map_tools.updateMap(l);
+        }
+    }
+
+
+    private void attemptKill() {
+
+        makeToast("ATTEMPT KILL");
+
+        if(target_location == null) {
+            Toast.makeText(this, "TARGET LOCATION IS NULL", Toast.LENGTH_LONG).show();
+            Log.e("#####", "TARGET LOCATION IS NULL");
+        }
+        else {
+            double distance = mLastLocation.distanceTo(target_location);
+            Toast.makeText(this, "DISTANCE TO TARGET: " + distance, Toast.LENGTH_SHORT).show();
+            Log.e("#####",  "DISTANCE TO TARGET: " + distance);
         }
     }
 
@@ -1269,7 +1379,7 @@ public class MainActivity extends FragmentActivity
     }
 
     //LocationListener Method
-//--------------------------------------------------------------------------------------------------
+/*--------------------------------------------------------------------------------------------------
     @Override
     public void onLocationChanged(Location current_location) {
 
@@ -1296,7 +1406,7 @@ public class MainActivity extends FragmentActivity
     public void onProviderDisabled(String provider) {
 
     }
-
+*/
 //--------------------------------------------------------------------------------------------------
 
 
@@ -1326,12 +1436,40 @@ public class MainActivity extends FragmentActivity
      * MISC SECTION. Miscellaneous methods.
      */
 
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent event) {
+        int action = event.getAction();
+        int keyCode = event.getKeyCode();
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_VOLUME_UP:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    attemptKill();
+                }
+                return true;
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
+                if (action == KeyEvent.ACTION_DOWN) {
+                    attemptKill();
+                }
+                return true;
+            default:
+                return super.dispatchKeyEvent(event);
+        }
+    }
+
 
     // Sets the flag to keep this screen on. It's recommended to do that during
     // the
     // handshake when setting up a game, because if the screen turns off, the
     // game will be
     // cancelled.
+
+    private void makeToast(String s) {
+
+        Log.e("#####", s);
+        Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+    }
+
+
     void keepScreenOn() {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
@@ -1339,5 +1477,75 @@ public class MainActivity extends FragmentActivity
     // Clears the flag that keeps the screen on.
     void stopKeepingScreenOn() {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    }
+
+//==================================================================================================
+
+    private void registerLocationUpdates() {
+
+        Criteria criteria = new Criteria();
+        criteria.setAccuracy(Criteria.ACCURACY_FINE);
+        criteria.setPowerRequirement(Criteria.POWER_LOW);
+        criteria.setAltitudeRequired(false);
+        criteria.setBearingRequired(false);
+
+        location_manager = (LocationManager)this.getSystemService(LOCATION_SERVICE);
+
+        best_provider = location_manager.getBestProvider(criteria, true);
+
+        // Cant get a hold of provider
+        if (best_provider == null) {
+            Log.v(TAG, "Provider is null");
+            return;
+        } else {
+            Log.v(TAG, "Provider: " + best_provider);
+        }
+
+        location_listener = new MyLocationListener();
+
+        try {
+            location_manager.requestLocationUpdates(best_provider, 1000, 0, location_listener);
+
+            // connect to the GPS location service
+            Location oldLocation = location_manager.getLastKnownLocation(best_provider);
+
+            if (oldLocation != null)  {
+               /* Log.v(TAG, "Got Old location");
+                latitude = Double.toString(oldLocation.getLatitude());
+                longitude = Double.toString(oldLocation.getLongitude());
+                waitingForLocationUpdate = false;
+                getNearbyStores();*/
+            } else {
+                Log.v(TAG, "NO Last Location found");
+            }
+        }
+        catch(SecurityException se) {Log.e("!!!!!!", se.toString()); }
+    }
+
+    private class MyLocationListener implements LocationListener {
+
+        public void onLocationChanged(Location current_location) {
+
+            //Toast.makeText(this, "Location changed", Toast.LENGTH_LONG);
+            Log.e("######", "Location changed");
+
+            if(map_tools != null) {
+                map_tools.updateMap(current_location);
+            }
+        }
+
+        public void onStatusChanged(String provider, int status, Bundle extras) {
+
+            //Toast.makeText(this, "status changed", Toast.LENGTH_LONG).show();
+        }
+
+        public void onProviderEnabled(String provider) {
+
+//            Toast.makeText(this, "provider enabled", Toast.LENGTH_LONG).show();
+        }
+
+        public void onProviderDisabled(String provider) {
+
+        }
     }
 }

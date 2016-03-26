@@ -18,7 +18,8 @@
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" >
+    android:layout_height="match_parent"
+    android:background="@color/black">
 
     <!-- SIGN-IN SCREEN -->
     <LinearLayout android:id="@+id/screen_sign_in" style="@style/LLScreen">
@@ -139,9 +140,15 @@
              android:layout_weight="5"
              android:id="@+id/map"
              tools:context=".GameMapActivity"
-             android:name="com.google.android.gms.maps.SupportMapFragment"
-             />
+             android:name="com.google.android.gms.maps.SupportMapFragment" />
 
+         <Button
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content"
+             android:clickable="true"
+             android:id="@+id/kill_button"
+             android:text="KILL!"
+             android:background="@android:color/holo_red_dark"/>
 
      </LinearLayout>
 

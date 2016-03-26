@@ -30,6 +30,7 @@
     <color name="SignOutButtonBackground">#e0e0e0</color>
     <color name="SignOutButtonTextColor">#404040</color>
 
+
     <dimen name="TitleSize">30sp</dimen>
 
     <style name="AppTheme" parent="android:Theme.Light.NoTitleBar.Fullscreen" />

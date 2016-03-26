@@ -33,7 +33,7 @@ public class MapTools {
     private GoogleApiClient mGoogleApiClient;
 
     private Location mLastLocation;
-    private int zoom_level = 15;
+    private int zoom_level = 18;
     private float old_heading = 0;
     private Marker arrow_marker;
     private Marker direction_marker;
