@@ -131,12 +131,22 @@ public class MainActivity extends FragmentActivity
 
     //GAME STUFF
     private Participant host, target, hunter;
-    private Location target_location;
+    private Location target_location, hunter_location;
     //==============================================================================================
 
     private LocationManager location_manager;
     private LocationListener location_listener;
     private String best_provider;
+
+    private final char FLAG_KILL = 'K';
+    private final char FLAG_LOBBY_READY = 'Q';
+    private final char FLAG_HUNTER = 'H';
+    private final char FLAG_TARGET = 'T';
+    private final char FLAG_HUNTER_COORDINATES = 'X';
+    private final char FLAG_TARGET_COORDINATES = 'Y';
+
+    private final char FLAG_COORDINATES = 'C';
+    private final char FLAG_GAME_STATE = 'G';
 
 
     @Override
@@ -176,6 +186,9 @@ public class MainActivity extends FragmentActivity
         registerLocationUpdates();
         Log.e("HEELLO", "test!");
 
+        String architecture = System.getProperty("os.arch");
+        TextView test_text = (TextView) findViewById(R.id.test_arch);
+        test_text.setText(architecture);
     }
 
 
@@ -215,7 +228,7 @@ public class MainActivity extends FragmentActivity
                 break;
             case R.id.button_invite_players:
                 // show list of invitable players
-                intent = Games.RealTimeMultiplayer.getSelectOpponentsIntent(mGoogleApiClient, 1, 3);
+                intent = Games.RealTimeMultiplayer.getSelectOpponentsIntent(mGoogleApiClient, 3, 3);
                 switchToScreen(R.id.screen_wait);
                 startActivityForResult(intent, RC_SELECT_PLAYERS);
                 break;
@@ -933,6 +946,8 @@ public class MainActivity extends FragmentActivity
         String sender = rtm.getSenderParticipantId();
         Log.e(TAG, "Message received: " + ArrayUtils.toString(buf));
 
+        //TODO
+        //NOT NEEDED
         if (buf[0] == 'F' || buf[0] == 'U') {
             // score update.
             int existingScore = mParticipantScore.containsKey(sender) ?
@@ -958,57 +973,73 @@ public class MainActivity extends FragmentActivity
                 mFinishedParticipants.add(rtm.getSenderParticipantId());
             }
         }
-        else if(buf[0] == 'Q') {
+        else if(buf[0] == FLAG_LOBBY_READY) {
 
-            //Received information about the lobby state
-            int ready = (int) buf[1];
-            boolean ready_bool = (ready == 0 ? true : false);
-
-            ready_players_map.put(sender, ready_bool);
-
-            Log.e("#########", "My Id: " + mMyId);
-            Log.e("#########", "Message received from" + sender);
-
-            Participant sender_p = null;
-            for(Participant p: mParticipants) {
-
-                Log.e("=========", p.getParticipantId());
-                if(p.getParticipantId().equals(sender)) {
-                    sender_p = p;
-                }
-            }
-            //Participant sender_p = mRoom.getParticipant(sender);
-            String sender_name = sender_p.getDisplayName();
-
-            for(int i = 0; i < lobby_player_list_view.getCount(); i++) {
-
-                View view = lobby_player_list_view.getChildAt(i);
-                CheckBox check_box = (CheckBox) view.findViewById(R.id.lobby_player_ready_checkbox);
-                TextView text_view = (TextView) view.findViewById(R.id.lobby_player_text);
-                String player_name = (String) text_view.getText();
-
-                if(player_name.equals(sender_name)) {
-
-                    check_box.setChecked(ready_bool);
-                    ready_players_map.put(sender, ready_bool);
-                }
-
-                Log.e("#########", "Message Received, Player Ready States: " + ready_players_map.toString());
-                checkLobbyState();
-            }
-
-            //  Toast.makeText(this, "Player " + sender + " is " + ready_bool, Toast.LENGTH_LONG).show();
+            receivedLobbyReadyMessage(sender, buf);
         }
-        else if(buf[0] == 'C') {
+        else if(buf[0] == FLAG_COORDINATES) {
 
             receiveCoordinateMessage(sender, buf);
         }
-        else if(buf[0] == 'G') {
+        else if(buf[0] == FLAG_GAME_STATE) {
 
             receivedGameStateMessage(sender, buf);
         }
+        else if(buf[0] == FLAG_KILL) {
+
+            receivedKillMessage(sender, buf);
+        }
+        else if(buf[0] == FLAG_TARGET) {
+
+            receivedTargetMessage(sender, buf);
+        }
+        else if(buf[0] == FLAG_HUNTER) {
+
+            receivedHunterMessage(sender, buf);
+        }
     }
 
+
+    private void receivedLobbyReadyMessage(String sender, byte[] buf) {
+
+        //Received information about the lobby state
+        int ready = (int) buf[1];
+        boolean ready_bool = (ready == 0 ? true : false);
+
+        ready_players_map.put(sender, ready_bool);
+
+        Log.e("#########", "My Id: " + mMyId);
+        Log.e("#########", "Message received from" + sender);
+
+        Participant sender_p = null;
+        for(Participant p: mParticipants) {
+
+            Log.e("=========", p.getParticipantId());
+            if(p.getParticipantId().equals(sender)) {
+                sender_p = p;
+            }
+        }
+        //Participant sender_p = mRoom.getParticipant(sender);
+        String sender_name = sender_p.getDisplayName();
+
+        for(int i = 0; i < lobby_player_list_view.getCount(); i++) {
+
+            View view = lobby_player_list_view.getChildAt(i);
+            CheckBox check_box = (CheckBox) view.findViewById(R.id.lobby_player_ready_checkbox);
+            TextView text_view = (TextView) view.findViewById(R.id.lobby_player_text);
+            String player_name = (String) text_view.getText();
+
+            if(player_name.equals(sender_name)) {
+
+                check_box.setChecked(ready_bool);
+                ready_players_map.put(sender, ready_bool);
+            }
+
+            Log.e("#########", "Message Received, Player Ready States: " + ready_players_map.toString());
+            checkLobbyState();
+        }
+
+    }
 
     // Broadcast my score to everybody else.
     void broadcastScore(boolean finalScore) {
@@ -1038,6 +1069,8 @@ public class MainActivity extends FragmentActivity
             }
         }
     }
+
+
 
     /*
      * UI SECTION. Methods that implement the game's UI.
@@ -1142,6 +1175,8 @@ public class MainActivity extends FragmentActivity
     //GAME MAP STUFF
     private MapTools map_tools;
 
+    private ArrayList<Player> player_list = new ArrayList<>();
+
     private boolean isHost() {
 
         return host.getParticipantId().equals(mMyId);
@@ -1159,6 +1194,8 @@ public class MainActivity extends FragmentActivity
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        if(mMap != null)
+            mMap.clear();
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         sensorManager.registerListener(this,
@@ -1166,6 +1203,7 @@ public class MainActivity extends FragmentActivity
                 SensorManager.SENSOR_DELAY_GAME);
 
 
+        //If current user is the host, have to set up game
         if(isHost()) {
 
             Log.e("#####", "AM HOST");
@@ -1173,23 +1211,42 @@ public class MainActivity extends FragmentActivity
             target = mParticipants.get(1);
             hunter = mParticipants.get(mParticipants.size() - 1);
 
-            Toast.makeText(this, "NUM PARTICIPANTS: " + num_participants, Toast.LENGTH_LONG).show();
-            Log.e("#####", "NUM PARTICIPANTS: " + num_participants);
+            player_list.add(new Player(getParticipantById(mMyId), target, hunter));
 
+            TextView target_view = (TextView) findViewById(R.id.hunter_name);
+            target_view.setText("TARGET: " + hunter.getDisplayName());
+            makeToast("Hunter is: " + target.getDisplayName());
+
+            TextView hunter_view = (TextView) findViewById(R.id.hunter_name);
+            hunter_view.setText("HUNTER: " + hunter.getDisplayName());
+            makeToast("Hunter is: " + hunter.getDisplayName());
+
+            //Start at i = 1, as you don't include yourself
             for(int i = 1; i < num_participants; i++) {
 
                 Participant current = mParticipants.get(i);
                 Participant current_target = mParticipants.get((i+1)%num_participants);
                 Participant current_hunter = mParticipants.get(i-1);
 
-                String message_string = current_target.getParticipantId() + "~" + current_hunter.getParticipantId();
-                byte[] iden_bytes = {'G'};
+                player_list.add(new Player(current, current_target, current_hunter));
+
+                //Send target message
+                String message_string = current_target.getParticipantId();
+                byte[] iden_bytes = {FLAG_TARGET};
                 byte[] info_bytes = message_string.getBytes(Charset.forName("UTF-8"));
                 byte[] message_bytes = ArrayUtils.addAll(iden_bytes, info_bytes);
                 Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
                         mRoomId, current.getParticipantId());
 
-                Log.e("######", "SENDING GAME STATE: " + message_bytes.toString());
+                //Send hunter message
+                message_string = current_hunter.getParticipantId();
+                iden_bytes[0] = FLAG_HUNTER;
+                info_bytes = message_string.getBytes(Charset.forName("UTF-8"));
+                message_bytes = ArrayUtils.addAll(iden_bytes, info_bytes);
+                Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                        mRoomId, current.getParticipantId());
+
+
                 Log.e("######", "TO: " + current.getParticipantId());
                 Log.e("######", "i: " + ""+ i);
             }
@@ -1198,9 +1255,6 @@ public class MainActivity extends FragmentActivity
         //send data periodically
         final boolean game_in_progress = true;
         final int milliseconds = 1000;
-
-
-
 
         final Handler h = new Handler();
         h.postDelayed(new Runnable() {
@@ -1230,16 +1284,57 @@ public class MainActivity extends FragmentActivity
         String target_id = game_state_array[0];
         String hunter_id = game_state_array[1];
 
+
+        //TODO
         Log.e("#####", "TARGET: " + target_id);
         Log.e("#####", "HUNTER: " + hunter_id);
     }
+
+
+    private void receivedTargetMessage(String sender, byte[] message_bytes) {
+
+        Log.e("######", "RECEIVED TARGER MESSAGE");
+        Log.e("######", "SENDER: " + sender);
+
+        byte[] target_bytes =  ArrayUtils.subarray(message_bytes, 1, message_bytes.length);
+        String target_id = new String(target_bytes, Charset.forName("UTF-8"));
+        target = getParticipantById(target_id);
+
+        if(target == null) {
+            makeToast("TARGET IS NULL!!!");
+        }
+        else {
+            TextView target_view = (TextView) findViewById(R.id.target_name);
+            target_view.setText("TARGET: " + target.getDisplayName());
+            makeToast("Target is: " + target.getDisplayName());
+        }
+    }
+
+    private void receivedHunterMessage(String sender, byte[] message_bytes) {
+
+        Log.e("######", "RECEIVED HUNTER MESSAGE");
+        Log.e("######", "SENDER: " + sender);
+
+        byte[] hunter_bytes =  ArrayUtils.subarray(message_bytes, 1, message_bytes.length);
+        String hunter_id = new String(hunter_bytes, Charset.forName("UTF-8"));
+        hunter = getParticipantById(hunter_id);
+
+        if(hunter == null) {
+            makeToast("HUNTER IS NULL!!!");
+        }
+        else {
+            TextView hunter_view = (TextView) findViewById(R.id.hunter_name);
+            hunter_view.setText("HUNTER: " + hunter.getDisplayName());
+            makeToast("Hunter is: " + hunter.getDisplayName());
+        }
+    }
+
 
 
     private void sendCoordinatesMessage() {
 
         Location current_location = getLocation();
         byte[] message_bytes = createCoordinateMessage(current_location);
-
 
         if(mParticipants != null && mRoom != null) {
             for (Participant p : mParticipants) {
@@ -1262,7 +1357,7 @@ public class MainActivity extends FragmentActivity
             double lat = location.getLatitude();
             double lng = location.getLongitude();
 
-            byte[] iden_bytes = {'C'};
+            byte[] iden_bytes = {FLAG_COORDINATES};
             byte[] lat_bytes = doubleToByteArray(lat);
             byte[] lng_bytes = doubleToByteArray(lng);
 
@@ -1276,7 +1371,7 @@ public class MainActivity extends FragmentActivity
     }
 
 
-    private void receiveCoordinateMessage(String sender, byte[] message_bytes) {
+    private void receiveCoordinateMessage(String sender_id, byte[] message_bytes) {
 
         Log.e("------", "RECEIVED COORINATE MESSAGE");
         Log.e("------", "MESSAGE LENGTH:" + message_bytes.length);
@@ -1287,16 +1382,32 @@ public class MainActivity extends FragmentActivity
         double lat = byteArraytoDouble(lat_bytes);
         double lng = byteArraytoDouble(lng_bytes);
 
-        if(map_tools != null && game_started) {
+        if (map_tools != null && game_started) {
 
-            if(target_location == null) {
-                target_location = new Location("");
+            //Received target coordinates
+            if (sender_id.equals(target.getParticipantId())) {
+
+                if (target_location == null) {
+                    target_location = new Location("");
+                }
+                target_location.setLatitude(lat);
+                target_location.setLongitude(lng);
+                map_tools.setDestCoordinates(lat, lng);
+                Location l = getLocation();
+                map_tools.updateMap(l);
             }
-            target_location.setLatitude(lat);
-            target_location.setLongitude(lng);
-            map_tools.setDestCoordinates(lat, lng);
-            Location l = getLocation();
-            map_tools.updateMap(l);
+            //Received hunter coordinates
+            else if (sender_id.equals(hunter.getParticipantId())) {
+
+                if (hunter_location == null) {
+                    hunter_location  = new Location("");
+                }
+                hunter_location .setLatitude(lat);
+                hunter_location .setLongitude(lng);
+               // map_tools.setDestCoordinates(lat, lng);
+                //Location l = getLocation();
+              //  map_tools.updateMap(l);
+            }
         }
     }
 
@@ -1306,14 +1417,38 @@ public class MainActivity extends FragmentActivity
         makeToast("ATTEMPT KILL");
 
         if(target_location == null) {
-            Toast.makeText(this, "TARGET LOCATION IS NULL", Toast.LENGTH_LONG).show();
-            Log.e("#####", "TARGET LOCATION IS NULL");
+            makeToast("TARGET LOCATION IS NULL");
         }
         else {
             double distance = mLastLocation.distanceTo(target_location);
-            Toast.makeText(this, "DISTANCE TO TARGET: " + distance, Toast.LENGTH_SHORT).show();
-            Log.e("#####",  "DISTANCE TO TARGET: " + distance);
+            makeToast("DISTANCE TO TARGET: " + distance);
+
+            boolean kill_succesful = distance < 5;
+
+            if(kill_succesful) {
+                makeToast("KILL SUCCESFUL");
+            }
+            else {
+                makeToast("KILL FAILED");
+            }
+
+            byte[] message_bytes = {FLAG_KILL, (byte)(kill_succesful? 0 : 1)};
+
+            Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                    mRoomId, host.getParticipantId());
+
+            if(target != null)
+                Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                        mRoomId, target.getParticipantId());
         }
+    }
+
+
+    private void receivedKillMessage(String sender, byte[] buf) {
+
+        boolean kill_succesful = (buf[1] == 0? true : false);
+
+        makeToast("RECEIVED KILL MESSAGE FROM: " + sender + " . KILL IS: " + kill_succesful);
     }
 
 
@@ -1435,6 +1570,15 @@ public class MainActivity extends FragmentActivity
     /*
      * MISC SECTION. Miscellaneous methods.
      */
+
+    private Participant getParticipantById(String id) {
+
+        for(Participant p: mParticipants) {
+            if(id.equals(p.getParticipantId()))
+                return p;
+        }
+        return null;
+    }
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {

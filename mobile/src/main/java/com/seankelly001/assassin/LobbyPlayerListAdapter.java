@@ -1,6 +1,7 @@
 package com.seankelly001.assassin;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -49,11 +50,14 @@ public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
         final CheckBox player_ready_checkbox_view = (CheckBox) view.findViewById(R.id.lobby_player_ready_checkbox);
         player_ready_checkbox_view.setEnabled(false);
 
+
         if(player_id.equals(mMyId)) {
 
             player_ready_checkbox_view.setEnabled(true);
-
             player_ready_checkbox_view.setOnClickListener(listener);
+
+            player_name_text_view.setTextColor(Color.RED);
+
 
             /*
             player_ready_checkbox_view.setOnClickListener(new View.OnClickListener() {

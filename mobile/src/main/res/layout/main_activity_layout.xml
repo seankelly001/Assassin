@@ -31,6 +31,12 @@
             android:text="@string/single_player" />
         <com.google.android.gms.common.SignInButton android:id="@+id/button_sign_in"
             style="@style/SignInButton" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/test_arch"
+            android:text="test"/>
     </LinearLayout>
 
     <!-- MAIN SCREEN -->
@@ -109,10 +115,35 @@
 
         <TextView android:id="@+id/lobby_countdown" style="@style/FigureLabel" android:visibility="invisible"/>
 
+        <LinearLayout
+            android:id="@+id/player_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:descendantFocusability="blocksDescendants"
+            xmlns:android="http://schemas.android.com/apk/res/android">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textColor="@color/white"
+                android:text="Player"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Ready"
+                android:textColor="@color/white"
+                />
+        </LinearLayout>
+
         <ListView
             android:id="@+id/lobby_player_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_gravity="top">
         </ListView>
 
 
@@ -126,17 +157,10 @@
          android:orientation="vertical"
          android:id="@+id/screen_map">
 
-         <TextView
-             android:layout_width="match_parent"
-             android:layout_height="wrap_content"
-             android:text="game screen"
-             android:layout_weight="1"/>
-
-
          <fragment xmlns:android="http://schemas.android.com/apk/res/android"
              xmlns:tools="http://schemas.android.com/tools"
              android:layout_width="match_parent"
-             android:layout_height="match_parent"
+             android:layout_height="wrap_content"
              android:layout_weight="5"
              android:id="@+id/map"
              tools:context=".GameMapActivity"
@@ -144,11 +168,36 @@
 
          <Button
              android:layout_width="match_parent"
-             android:layout_height="wrap_content"
+             android:layout_height="30dp"
+             android:layout_weight="1"
              android:clickable="true"
              android:id="@+id/kill_button"
              android:text="KILL!"
              android:background="@android:color/holo_red_dark"/>
+
+         <LinearLayout
+             android:layout_width="match_parent"
+             android:layout_height="50dp"
+             android:orientation="horizontal"
+             android:layout_weight="1"
+             >
+
+             <TextView
+                 android:id="@+id/target_name"
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 android:text="TARGET: "
+                 android:layout_weight="1"/>
+
+
+             <TextView
+                 android:id="@+id/hunter_name"
+                 android:layout_width="match_parent"
+                 android:layout_height="match_parent"
+                 android:text="HUNTER: "
+                 android:layout_weight="1"/>
+
+         </LinearLayout>
 
      </LinearLayout>
 
