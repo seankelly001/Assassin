@@ -5,4 +5,10 @@
     <color name="colorAccent">#FF4081</color>
     <color name="black">#000000</color>
     <color name="white">#FFFFFF</color>
+
+    <color name="progress_yellow">#FFCC33</color>
+    <color name="progress_red">#FF0000</color>
+
+    <color name="progress_light_blue">#33CCFF</color>
+    <color name="progress_green">#FF009900</color>
 </resources>

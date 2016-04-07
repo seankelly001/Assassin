@@ -22,7 +22,10 @@
     android:background="@color/black">
 
     <!-- SIGN-IN SCREEN -->
-    <LinearLayout android:id="@+id/screen_sign_in" style="@style/LLScreen">
+    <LinearLayout
+        android:id="@+id/screen_sign_in"
+        style="@style/LLScreen">
+
         <TextView style="@style/GameTitle" />
         <TextView style="@style/GameBlurb" />
 
@@ -32,24 +35,15 @@
         <com.google.android.gms.common.SignInButton android:id="@+id/button_sign_in"
             style="@style/SignInButton" />
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:id="@+id/test_arch"
-            android:text="test"/>
     </LinearLayout>
 
     <!-- MAIN SCREEN -->
-    <LinearLayout android:id="@+id/screen_main" style="@style/LLScreen">
+    <LinearLayout
+        android:id="@+id/screen_main"
+        style="@style/LLScreen">
+
         <TextView style="@style/GameTitle" />
 
-        <!--
-        <Button android:id="@+id/button_single_player_2"
-            style="@style/MainScreenButton"
-            android:text="@string/single_player" />
-        <TextView style="@style/MainScreenButtonBlurb"
-            android:text="@string/single_player_explanation" />
-            -->
         <Button android:id="@+id/button_quick_game"
             style="@style/MainScreenButton"
             android:text="@string/quick_game" />
@@ -68,9 +62,10 @@
         <TextView style="@style/MainScreenButtonBlurb"
             android:text="@string/see_invitations_explanation" />
 
-        <Button android:id="@+id/map_test_button"
+        <Button
+            android:id="@+id/settings"
             style="@style/MainScreenButton"
-            android:text="Test Map"/>
+            android:text="Settings"/>
 
         <Button android:id="@+id/button_sign_out"
             style="@style/SignOutButton"
@@ -83,11 +78,21 @@
         <Button android:id="@+id/button_accept_popup_invitation"
             style="@style/InvPopupButton"
             android:text="@string/accept_popup_invite" />
+        <Button android:id="@+id/button_decline_popup_invitations"
+            style="@style/InvPopupButton"
+            android:text="Decline!"/>
     </LinearLayout>
 
     <!-- "PLEASE WAIT" SCREEN -->
     <LinearLayout android:id="@+id/screen_wait" style="@style/LLScreen">
         <TextView style="@style/Blurb" android:text="@string/please_wait" />
+        <ProgressBar
+            android:id="@+id/wait_progress_bar"
+            android:layout_height="wrap_content"
+            android:layout_width="wrap_content"
+            style="?android:attr/progressBarStyleLarge"
+            android:indeterminateDrawable="@drawable/wait_progress"
+            />
     </LinearLayout>
 
     <!-- GAMEPLAY SCREEN -->
@@ -157,29 +162,105 @@
          android:orientation="vertical"
          android:id="@+id/screen_map">
 
-         <fragment xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:tools="http://schemas.android.com/tools"
-             android:layout_width="match_parent"
-             android:layout_height="wrap_content"
-             android:layout_weight="5"
-             android:id="@+id/map"
-             tools:context=".GameMapActivity"
-             android:name="com.google.android.gms.maps.SupportMapFragment" />
 
-         <Button
+         <FrameLayout
              android:layout_width="match_parent"
-             android:layout_height="30dp"
-             android:layout_weight="1"
-             android:clickable="true"
-             android:id="@+id/kill_button"
-             android:text="KILL!"
-             android:background="@android:color/holo_red_dark"/>
+             android:layout_height="wrap_content">
+
+             <ProgressBar
+                 android:id="@+id/target_distance_progress"
+                 android:layout_width="match_parent"
+                 android:layout_height="20dp"
+                 style="?android:attr/progressBarStyleHorizontal"
+                 android:progressDrawable="@drawable/progressbar_target" />
+
+             <TextView
+                 android:id="@+id/target_distance_text"
+                 android:layout_width="match_parent"
+                 android:layout_height="20dp"
+                 android:layout_gravity="center"
+                 android:gravity="center"/>
+
+         </FrameLayout>
+
+         <FrameLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content">
+
+             <ProgressBar
+                 android:id="@+id/hunter_distance_progress"
+                 android:layout_width="match_parent"
+                 android:layout_height="20dp"
+                 style="?android:attr/progressBarStyleHorizontal"
+                 android:progressDrawable="@drawable/progressbar_hunter" />
+
+             <TextView
+                 android:id="@+id/hunter_distance_text"
+                 android:layout_width="match_parent"
+                 android:layout_height="20dp"
+                 android:layout_gravity="center"
+                 android:gravity="center"/>
+
+         </FrameLayout>
+         
+
+
+
+
+
+
+         <FrameLayout
+             android:layout_width="match_parent"
+             android:layout_height="wrap_content">
+
+             <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+                 xmlns:tools="http://schemas.android.com/tools"
+                 android:layout_width="match_parent"
+                 android:layout_height="wrap_content"
+                 android:layout_weight="5"
+                 android:id="@+id/map"
+                 tools:context=".GameMapActivity"
+                 android:name="com.google.android.gms.maps.SupportMapFragment" />
+
+             <LinearLayout
+                 android:layout_width="wrap_content"
+                 android:layout_height="wrap_content"
+                 android:orientation="vertical">
+
+                 <Button
+                     android:id="@+id/show_photo_button"
+                     android:layout_width="wrap_content"
+                     android:layout_height="30dp"
+                     android:text="Photo"
+                     android:background="@color/progress_green" />
+
+                 <ImageView
+                     android:id="@+id/target_image_view"
+                     android:layout_width="wrap_content"
+                     android:layout_height="wrap_content"
+                     android:visibility="gone"/>
+
+             </LinearLayout>
+
+
+             <Button
+                 android:layout_width="match_parent"
+                 android:layout_height="50dp"
+                 android:clickable="true"
+                 android:id="@+id/kill_button"
+                 android:text="KILL!"
+                 android:background="@android:color/holo_red_dark"
+                 android:layout_gravity="bottom"
+                 android:gravity="center"/>
+
+         </FrameLayout>
+
+
 
          <LinearLayout
              android:layout_width="match_parent"
              android:layout_height="50dp"
              android:orientation="horizontal"
-             android:layout_weight="1"
              >
 
              <TextView

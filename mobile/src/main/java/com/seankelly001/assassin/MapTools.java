@@ -69,7 +69,7 @@ public class MapTools {
 
     public void updateMap(Location current_location) {
 
-        Log.e("#######", "UPDATING MAP");
+        Log.v("#######", "UPDATING MAP");
 
         if(mMap == null)  Log.e("#######","MAP IS NULL");
         if(current_location == null)  Log.e("#######","LOCATION IS NULL");
@@ -132,14 +132,14 @@ public class MapTools {
 
         if(destReceived) {
             float bearing = current_location.bearingTo(destLocation);
-            Log.e("HEADING", "bearing 1: " + bearing);
+            Log.v("HEADING", "bearing 1: " + bearing);
 
             //bearing = Math.round((-bearing / 360) + 180);
             bearing = (bearing + 360) % 360;
-            Log.e("HEADING", "bearing 2: " + bearing);
+            Log.v("HEADING", "bearing 2: " + bearing);
 
             float rotation = bearing - old_heading;
-            Log.e("HEADING", "rotation: " + rotation);
+            Log.v("HEADING", "rotation: " + rotation);
 
             if (direction_marker == null) {
 
