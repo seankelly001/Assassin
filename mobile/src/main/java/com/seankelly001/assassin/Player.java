@@ -12,15 +12,13 @@ public class Player {
 
 
     private final Participant participant;
-    private Participant target;
-    private Participant hunter;
+    private Player target;
+    private Player hunter;
     private Bitmap picture;
 
-    public Player(Participant participant, Participant target, Participant hunter) {
+    public Player(Participant participant) {
 
         this.participant = participant;
-        this.target = target;
-        this.hunter = hunter;
     }
 
     public Participant getParticipant() {
@@ -31,21 +29,21 @@ public class Player {
         return participant.getParticipantId();
     }
 
-    public Participant getTarget() {
+    public Player getTarget() {
         return target;
     }
 
-    public Participant getHunter() {
+    public Player getHunter() {
         return hunter;
     }
 
     public Bitmap getPicture() {return picture;}
 
-    public void setHunter(Participant hunter) {
+    public void setHunter(Player hunter) {
         this.hunter = hunter;
     }
 
-    public void setTarget(Participant target) {
+    public void setTarget(Player target) {
         this.target = target;
     }
 
