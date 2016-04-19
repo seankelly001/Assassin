@@ -3,6 +3,7 @@ package com.seankelly001.assassin;
 import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -22,13 +23,17 @@ import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.util.Pair;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ListView;
@@ -66,6 +71,7 @@ import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -75,7 +81,7 @@ public class MainActivity extends FragmentActivity
         implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener,
         View.OnClickListener, RealTimeMessageReceivedListener,
         RoomStatusUpdateListener, RoomUpdateListener, OnInvitationReceivedListener,
-        OnMapReadyCallback, SensorEventListener
+        OnMapReadyCallback, SensorEventListener, ActivityCompat.OnRequestPermissionsResultCallback
 {
 
     /*
@@ -94,7 +100,7 @@ public class MainActivity extends FragmentActivity
     private static final int RC_SIGN_IN = 9001;
 
 
-    private static final int MIN_PLAYERS = 2;
+    private static final int MIN_PLAYERS = 3;
     private static final int MAX_PLAYERS = 7;
 
     // Client used to interact with Google APIs.
@@ -149,17 +155,19 @@ public class MainActivity extends FragmentActivity
     private LocationListener location_listener;
     private String best_provider;
 
-    private final char FLAG_KILL = 'K';
-    private final char FLAG_LOBBY_READY = 'Q';
-    private final char FLAG_HUNTER = 'H';
-    private final char FLAG_TARGET = 'T';
-    private final char FLAG_COORDINATES = 'C';
-    private final char FLAG_GAME_STATE = 'G';
-    private final char FLAG_MESSAGE = 'M';
-    private final char FLAG_BEEN_KILLED = 'B';
-    private final char FLAG_REQUEST_PICTURE = 'R';
-    private final char FLAG_PICTURE = 'P';
-    private final char FLAG_PICTURE_END = 'E';
+    private final char FLAG_KILL = 'A';
+    private final char FLAG_LOBBY_READY = 'B';
+    private final char FLAG_HUNTER = 'C';
+    private final char FLAG_TARGET = 'D';
+    private final char FLAG_COORDINATES = 'E';
+    private final char FLAG_GAME_STATE = 'F';
+    private final char FLAG_MESSAGE = 'G';
+    private final char FLAG_BEEN_KILLED = 'H';
+    private final char FLAG_REQUEST_PICTURE = 'I';
+    private final char FLAG_PICTURE = 'J';
+    private final char FLAG_SCORE_KILL = 'K';
+    private final char FLAG_SCORE_DEATH = 'L';
+    private final char FLAG_CHAT_MESSAGE = 'M';
 
     //==============================================================================================
     private ProgressBar target_distance_progress;
@@ -171,11 +179,23 @@ public class MainActivity extends FragmentActivity
     private ImageView target_photo_view;
     private AlertDialog image_alert_dialog;
 
+    private ListView final_scoreboard_list_view;
+
+    private ListView scoreboard_list_view;
+
     private Button show_photo_button;
+    private Button show_scoreboard_button;
+
+    private LinearLayout scoreboard_layout;
 
     private LinearLayout game_over_layout;
     private LinearLayout game_over;
     private TextView killed_view;
+
+    private TextView game_over_text_view;
+
+    private  LinearLayout game_items_layout;
+
 
 
     private Button kill_button;
@@ -183,11 +203,20 @@ public class MainActivity extends FragmentActivity
     private ListView lobby_player_list_view;
     private TextView lobby_countdown_view;
 
+    private ListView lobby_chat_list;
+    private EditText chat_lobby_input;
+
+    private LinearLayout game_chat_layout;
+    private ListView game_chat_list;
+    private EditText chat_game_input;
 
     private TextView game_countdown_view;
 
     private TextView target_view;
     private TextView hunter_view;
+
+    private ArrayList<Pair<String, String>> chat_array_list = new ArrayList<>();
+    private ChatListAdapter chat_list_adapter;
 
     //==============================================================================================
 
@@ -204,6 +233,8 @@ public class MainActivity extends FragmentActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main_activity_layout);
 
+        Log.e("#####", "F: onCreate");
+
         // Create the Google Api Client with access to Plus and Games
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
@@ -218,15 +249,61 @@ public class MainActivity extends FragmentActivity
             findViewById(id).setOnClickListener(this);
         }
 
+
+        lobby_chat_list = (ListView) findViewById(R.id.lobby_chat_list);
+
+        chat_lobby_input = (EditText) findViewById(R.id.chat_lobby_input);
+        chat_lobby_input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                if(actionId == EditorInfo.IME_ACTION_SEND) {
+
+                    String chat_input_string = chat_lobby_input.getText().toString();
+                    chat_lobby_input.setText("");
+                    sendChatMessage(chat_input_string);
+                    hideSoftKeyboard();
+                }
+                return false;
+            }
+        });
+
+        //private LinearLayout game_chat_layout;
+        //private ListView game_chat_list;
+        //private EditText chat_game_input;
+
+        game_chat_layout = (LinearLayout) findViewById(R.id.game_chat_layout);
+        game_chat_list = (ListView) findViewById(R.id.game_chat_list);
+        chat_game_input = (EditText) findViewById(R.id.chat_game_input);
+
+        chat_game_input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                if(actionId == EditorInfo.IME_ACTION_SEND) {
+
+                    String chat_input_string = chat_game_input.getText().toString();
+                    chat_game_input.setText("");
+                    sendChatMessage(chat_input_string);
+                    hideSoftKeyboard();
+                }
+                return false;
+            }
+        });
+
+
         target_photo_view = (ImageView) findViewById(R.id.target_image_view);
         target_distance_progress = (ProgressBar) findViewById(R.id.target_distance_progress);
         target_distance_text = (TextView) findViewById(R.id.target_distance_text);
         hunter_distance_progress = (ProgressBar) findViewById(R.id.hunter_distance_progress);
         hunter_distance_text = (TextView) findViewById(R.id.hunter_distance_text);
 
-        game_over_layout = (LinearLayout) findViewById(R.id.game_over_layout);
+        game_over_layout = (LinearLayout) findViewById(R.id.game_gray_overlay_layout);
         game_over = (LinearLayout) findViewById(R.id.game_over);
         killed_view = (TextView) findViewById(R.id.killed_view);
+        game_over_text_view = (TextView) findViewById(R.id.game_over_text_view);
+
+        game_items_layout = (LinearLayout) findViewById(R.id.game_items_layout);
 
         lobby_countdown_view = (TextView) findViewById(R.id.lobby_countdown);
         lobby_player_list_view = (ListView) findViewById(R.id.lobby_player_list);
@@ -234,23 +311,64 @@ public class MainActivity extends FragmentActivity
         target_view = (TextView) findViewById(R.id.target_name);
         hunter_view = (TextView) findViewById(R.id.hunter_name);
 
+        final_scoreboard_list_view = (ListView) findViewById(R.id.final_scoreboard_view);
+
+        scoreboard_list_view = (ListView) findViewById(R.id.scoreboard_view);
+        scoreboard_layout = (LinearLayout) findViewById(R.id.scoreboard_layout);
+
         kill_button = (Button) findViewById(R.id.kill_button);
 
         show_photo_button = (Button) findViewById(R.id.show_photo_button);
+        //show_photo_button.getBackground();
+
         show_photo_button.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     //makeToast("DOWN");
+                    //Log.e("#####", "DOWN");
                     target_photo_view.setVisibility(View.VISIBLE);
-                }
-                else if(event.getAction() == MotionEvent.ACTION_UP) {
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
                     // makeToast("UP");
+                    //Log.e("#####", "UP");
                     target_photo_view.setVisibility(View.GONE);
                 }
                 return false;
             }
         });
+
+
+
+        show_scoreboard_button = (Button) findViewById(R.id.show_scoreboard_button);
+        show_scoreboard_button.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    //makeToast("DOWN");
+                    scoreboard_layout.setVisibility(View.VISIBLE);
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    // makeToast("UP");
+                    scoreboard_layout.setVisibility(View.GONE);
+                }
+                return false;
+            }
+        });
+
+
+
+
+
+        /*
+        if((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED)
+                || (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED)) {
+
+            Log.e("#####", "REQUESTING PERMISSIONS");
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE}
+                    , MY_PERMISSIONS_REQUEST);
+        }*/
 
 
         preferences = this.getSharedPreferences(PREFERENCES_NAME, 0);
@@ -263,6 +381,85 @@ public class MainActivity extends FragmentActivity
 
         registerLocationUpdates();
     }
+
+
+    public void hideSoftKeyboard() {
+
+        if(this.getCurrentFocus() != null) {
+            InputMethodManager inputManager =
+                    (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
+            inputManager.hideSoftInputFromWindow(
+                    this.getCurrentFocus().getWindowToken(),
+                    InputMethodManager.HIDE_NOT_ALWAYS);
+        }
+    }
+
+    /*
+    private boolean checkPermissions() {
+
+        Log.e("#####", "CHECKING PERMISSIONS");
+        return ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                == PackageManager.PERMISSION_GRANTED)
+                || (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED));
+    }
+
+    private void requestPermissions() {
+
+        if(requesting_permissions_in_progress) {
+            Log.e("######", "CHECKING PERMISSIONS IN PROGRESS");
+            return;
+        }
+        requesting_permissions_in_progress = true;
+        Log.e("#####", "REQUESTING PERMISSIONS");
+        ActivityCompat.requestPermissions(this,
+                new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE}
+                , MY_PERMISSIONS_REQUEST);
+    }*/
+
+
+
+
+           /*sensorManager.registerListener(this,
+                sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
+                SensorManager.SENSOR_DELAY_NORMAL);
+
+
+        target_photo_view = (ImageView) findViewById(R.id.target_image_view);
+        preferences = this.getSharedPreferences(PREFERENCES_NAME, 0);
+
+        checkImageFileExists(); */
+
+
+
+    /*
+    @Override
+    public void Acc onRequestPermissionsResult(int request_code, String[] permissions, int[] grant_results) {
+
+        Log.e("#####", "PERMISSION CALLBACK");
+
+        switch (request_code) {
+            case(MY_PERMISSIONS_REQUEST): {
+
+                boolean fine_location_permission_granted = grant_results[0] == PackageManager.PERMISSION_GRANTED;
+                boolean read_storage_permission_granted = grant_results[1] == PackageManager.PERMISSION_GRANTED;
+
+                Log.e("#####", "PERMISSIONS: (" + PackageManager.PERMISSION_GRANTED + ") : " + fine_location_permission_granted + "," + read_storage_permission_granted );
+
+                if (fine_location_permission_granted && read_storage_permission_granted) {
+                    makeToast("PERMISSIONS GRANTED");
+                    continueCreate();
+                }
+                else {
+                    //makeToast("PERMISSIONS NEED TO BE GRANTED TO PLAY GAME");
+
+                    Log.e("#####", "MAKING DIALOG");
+
+                }
+                requesting_permissions_in_progress = false;
+            }
+        }
+    }*/
 
 
     @Override
@@ -308,7 +505,8 @@ public class MainActivity extends FragmentActivity
                 mResolvingConnectionFailure = false;
                 if (responseCode == RESULT_OK) {
                     mGoogleApiClient.connect();
-                } else {
+                }
+                else {
                     BaseGameUtils.showActivityResultError(this,requestCode,responseCode, R.string.signin_other_error);
                 }
                 break;
@@ -329,7 +527,7 @@ public class MainActivity extends FragmentActivity
         rtmConfigBuilder.setAutoMatchCriteria(autoMatchCriteria);
         switchToScreen(R.id.screen_wait);
         keepScreenOn();
-        resetGameVars();
+        //resetGameVars();
         Games.RealTimeMultiplayer.create(mGoogleApiClient, rtmConfigBuilder.build());
     }
 
@@ -350,6 +548,9 @@ public class MainActivity extends FragmentActivity
         // get the invitee list
         final ArrayList<String> invitees = data.getStringArrayListExtra(Games.EXTRA_PLAYER_IDS);
         Log.d(TAG, "Invitee count: " + invitees.size());
+
+
+        Log.e("#####", "invitee size: " + invitees.size());
 
         // get the automatch criteria
         Bundle autoMatchCriteria = null;
@@ -372,7 +573,7 @@ public class MainActivity extends FragmentActivity
         }
         switchToScreen(R.id.screen_wait);
         keepScreenOn();
-        resetGameVars();
+        //resetGameVars();
         Games.RealTimeMultiplayer.create(mGoogleApiClient, rtmConfigBuilder.build());
         Log.d(TAG, "Room created, waiting for it to be ready...");
         Log.e("#####", "FINISHED SELECT PLAYERS");
@@ -407,7 +608,7 @@ public class MainActivity extends FragmentActivity
                 .setRoomStatusUpdateListener(this);
         switchToScreen(R.id.screen_wait);
         keepScreenOn();
-        resetGameVars();
+        //resetGameVars();
         Games.RealTimeMultiplayer.join(mGoogleApiClient, roomConfigBuilder.build());
     }
 
@@ -417,6 +618,8 @@ public class MainActivity extends FragmentActivity
         if(invId != null) {
             Log.e("#####", "Declining Invitation");
             Games.RealTimeMultiplayer.declineInvitation(mGoogleApiClient, invId);
+            //TODO
+            //REMOVE INVITATION FROM SCREEN
         }
     }
 
@@ -478,26 +681,6 @@ public class MainActivity extends FragmentActivity
     } */
 
 
-    // Leave the room.
-    void leaveRoom() {
-
-        Log.d(TAG, "Leaving room.");
-        Log.e("#####", "F: leaveRoom");
-        if (mGoogleApiClient != null && mRoomId != null) {
-
-            Games.RealTimeMultiplayer.leave(mGoogleApiClient, this, mRoomId);
-            mRoomId = null;
-            game_started = false;
-            GAME_STATE = GameState.NOT_IN_GAME;
-            switchToScreen(R.id.screen_wait);
-        }
-        else {
-            GAME_STATE = GameState.NOT_IN_GAME;
-            switchToMainScreen();
-        }
-        resetGameVars();
-    }
-
 
     // Show the waiting room UI to track the progress of other players as they enter the
     // room and get connected.
@@ -508,7 +691,7 @@ public class MainActivity extends FragmentActivity
         // For simplicity, we require everyone to join the game before we start it
         // (this is signaled by Integer.MAX_VALUE).
         //final int MIN_PLAYERS = Integer.MAX_VALUE;
-        Intent intent = Games.RealTimeMultiplayer.getWaitingRoomIntent(mGoogleApiClient, room, MIN_PLAYERS);
+        Intent intent = Games.RealTimeMultiplayer.getWaitingRoomIntent(mGoogleApiClient, room, MIN_PLAYERS + 1);
 
         // show waiting room UI
         mRoom = room;
@@ -533,7 +716,7 @@ public class MainActivity extends FragmentActivity
     @Override
     public void onInvitationRemoved(String invitationId) {
 
-        if (mIncomingInvitationId.equals(invitationId)&&mIncomingInvitationId!=null) {
+        if (mIncomingInvitationId!=null && mIncomingInvitationId.equals(invitationId)) {
             mIncomingInvitationId = null;
             switchToScreen(mCurScreen); // This will hide the invitation popup
         }
@@ -645,16 +828,20 @@ public class MainActivity extends FragmentActivity
     // Called when we get disconnected from the room. We return to the main screen.
     @Override
     public void onDisconnectedFromRoom(Room room) {
-        mRoomId = null;
         showGameError();
     }
 
 
     // Show error message about game being cancelled and return to main screen.
     void showGameError() {
-        BaseGameUtils.makeSimpleDialog(this, getString(R.string.game_problem));
-        makeToast("GAME ERROR");
-        switchToMainScreen();
+
+        //Don't do anything if game has ended (viewing scoreboard)
+        if(GAME_STATE != GameState.GAME_ENDED) {
+            BaseGameUtils.makeSimpleDialog(this, getString(R.string.game_problem));
+            makeToast("GAME ERROR");
+            endGame();
+            switchToMainScreen();
+        }
     }
 
 
@@ -709,7 +896,6 @@ public class MainActivity extends FragmentActivity
 
         Log.e("#####", "F: onPeerDeclined - " + arg1.toString());
         updateRoom(room);
-        checkStartLobby();
     }
 
 
@@ -717,13 +903,13 @@ public class MainActivity extends FragmentActivity
     public void onPeerInvitedToRoom(Room room, List<String> arg1) {
         Log.e("#####", "F: onPeerInvitedToRoom");
         updateRoom(room);
-        checkStartLobby();
     }
 
 
     @Override
     public void onP2PDisconnected(String participant) {
 
+        Log.e("#####", "F: onP2PDisconnected");
         makeToast("Player has disconnected (2)");
         endGame();
     }
@@ -781,7 +967,7 @@ public class MainActivity extends FragmentActivity
     @Override
     public void onPeersDisconnected(Room room, List<String> peers) {
 
-        Log.e("#####", "F: onPeersDisconnected");
+        Log.e("#####", "F: onPeersDisconnected (1)");
         try {
             for(String peer: peers) {
                 String player_name = getParticipantById(peer).getDisplayName();
@@ -790,7 +976,7 @@ public class MainActivity extends FragmentActivity
                     playerLeft(peer);
             }
         }
-        catch (Error e) {}
+        catch (Exception e) {Log.e("#####", e.toString());}
         updateRoom(room);
         //endGame();
     }
@@ -805,13 +991,22 @@ public class MainActivity extends FragmentActivity
             while(iter.hasNext()){
                 Participant p = iter.next();
                 //Participant has declined invitation, remove them from list
-                if(p.getStatus() == Participant.STATUS_DECLINED) {
-                    Log.e("#####", "Removing: " + p.getDisplayName());
+                if(p.getStatus() == Participant.STATUS_DECLINED
+                    || p.getStatus() == Participant.STATUS_LEFT
+                    || p.getStatus() == Participant.STATUS_UNRESPONSIVE) {
+                    Log.e("#####", "Removing: " + p.getDisplayName() + " " + p.getStatus());
                     iter.remove();
+                    player_list.remove(getPlayerById(p.getParticipantId()));
                 }
             }
 
             Log.e("#####", "ROOM UPDATE - " + mParticipants.size());
+            if(GAME_STATE == GameState.GAME_INPROGRESS && mParticipants.size() <= MIN_PLAYERS) {
+
+                makeToast("THERE ARE NOT ENOUGH PLAYERS TO CONTINUE THE GAME");
+                game_over_text_view.setText("GAME OVER\n There are not enough players to continue the game");
+                gameOver();
+            }
         }
     }
 
@@ -819,6 +1014,7 @@ public class MainActivity extends FragmentActivity
     private void checkStartLobby() {
 
         Log.e("#####", "F: checkStartLobby");
+        int player_count = 0;
         for(Participant p: mParticipants) {
             Log.e("#####", p.getDisplayName() + " : " + p.getStatus());
             if(p.getStatus() != Participant.STATUS_JOINED) return;
@@ -841,26 +1037,11 @@ public class MainActivity extends FragmentActivity
     private boolean waitForIdLobby = true;
 
 
-    private void resetGameVars() {
-
-        mRoom = null;
-        mRoomId = null;
-        game_started = false;
-        lobby_countdown_begun = false;
-        waitForIdLobby = true;
-        ready_players_map = null;
-        lobby_player_list_adapter = null;
-        lobby_countdown_seconds = 3;
-        current_game_mins = INITIAL_GAME_MINS;
-        current_game_secs = INITIAL_GAME_SECS;
-
-        game_over_layout.setVisibility(View.GONE);
-        killed_view.setVisibility(View.GONE);
-    }
-
 
     //Start the lobby
     void startLobby() {
+
+        Log.e("#####", "F: startLobby");
 
         switchToScreen(R.id.screen_lobby);
         GAME_STATE = GameState.IN_LOBBY;
@@ -897,7 +1078,7 @@ public class MainActivity extends FragmentActivity
                         continue;
 
                     boolean ready_status = ready_players_map.get(mMyId);
-                    mMsgBuf[0] = (byte) 'Q';
+                    mMsgBuf[0] = (byte) FLAG_LOBBY_READY;
                     mMsgBuf[1] = (byte) (ready_status ? 0 : 1);
 
                     Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, mMsgBuf,
@@ -912,6 +1093,12 @@ public class MainActivity extends FragmentActivity
         host = mParticipants.get(0);
         String host_name = host.getDisplayName();
         Toast.makeText(this, "HOST IS: " + host_name, Toast.LENGTH_LONG).show();
+
+
+        //==========================================================
+        //TODO
+        chat_list_adapter = new ChatListAdapter(this, chat_array_list);
+        lobby_chat_list.setAdapter(chat_list_adapter);
     }
 
 
@@ -993,6 +1180,8 @@ public class MainActivity extends FragmentActivity
     private MapTools map_tools;
     private ArrayList<Player> player_list = new ArrayList<>();
 
+    private ScoreboardPlayerAdapter scoreboard_player_adapter;
+
     private boolean isHost() {
 
         try {return host.getParticipantId().equals(mMyId);}
@@ -1021,14 +1210,18 @@ public class MainActivity extends FragmentActivity
                 sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
                 SensorManager.SENSOR_DELAY_GAME);
 
+        game_chat_list.setAdapter(chat_list_adapter);
+
+        for(Participant p: mParticipants) {
+            player_list.add(new Player(p));
+        }
+
         //If current user is the host, have to set up game
         if(isHost()) {
 
             Log.e("#####", "AM HOST");
 
-            for(Participant p: mParticipants) {
-                player_list.add(new Player(p));
-            }
+
             int num_players = player_list.size();
 
             for(int i = 0; i < num_players; i++) {
@@ -1073,6 +1266,14 @@ public class MainActivity extends FragmentActivity
             }*/
         }
 
+
+        //Set up scoreboard
+
+        scoreboard_player_adapter = new ScoreboardPlayerAdapter(this, player_list, mMyId, null);
+        scoreboard_list_view.setAdapter(scoreboard_player_adapter);
+
+
+
         //send data periodically
         final int milliseconds = 1000;
         final Handler h = new Handler();
@@ -1089,7 +1290,7 @@ public class MainActivity extends FragmentActivity
     }
 
 
-    private final int INITIAL_GAME_MINS = 10;
+    private final int INITIAL_GAME_MINS = 1;
     private final int INITIAL_GAME_SECS = 00;
     private int current_game_mins = INITIAL_GAME_MINS;
     private int current_game_secs = INITIAL_GAME_SECS;
@@ -1097,7 +1298,9 @@ public class MainActivity extends FragmentActivity
 
     private void gameTick() {
 
-        sendCoordinatesMessage();
+        //Send coordinates every 5 seconds
+        if(current_game_secs % 5 == 0)
+            sendCoordinatesMessage();
         game_countdown_view.setText("" + (current_game_mins < 10? "0":"") + current_game_mins + ":"
                 + (current_game_secs < 10? "0":"") + current_game_secs);
 
@@ -1119,7 +1322,7 @@ public class MainActivity extends FragmentActivity
 
     private void endGame() {
 
-        if (game_started) {
+        if (GAME_STATE.equals(GameState.GAME_INPROGRESS)) {
             makeToast("GAME ENDED");
             leaveRoom();
             switchToMainScreen();
@@ -1130,9 +1333,96 @@ public class MainActivity extends FragmentActivity
     private void gameOver() {
 
         makeToast("GAME OVER!");
+        GAME_STATE = GameState.GAME_ENDED;
+
+        ArrayList<Player> final_player_list = new ArrayList<>(player_list);
+        Collections.sort(final_player_list);
+        Collections.reverse(final_player_list);
+
+        String winner_id = final_player_list.get(0).getId();
+        Log.e("#####", "WINNDER IS: " + final_player_list.get(0).getParticipant().getDisplayName());
+
+        ScoreboardPlayerAdapter final_scoreboard_adapter = new ScoreboardPlayerAdapter(this, final_player_list, mMyId, winner_id);
+        final_scoreboard_list_view.setAdapter(final_scoreboard_adapter);
+
+        killed_view.setVisibility(View.GONE);
         game_over_layout.setVisibility(View.VISIBLE);
         game_over.setVisibility(View.VISIBLE);
+        final_scoreboard_list_view.setVisibility(View.VISIBLE);
+
+        try {
+            game_items_layout.removeView(game_chat_layout);
+            game_over_layout.addView(game_chat_layout);
+            game_chat_layout.setVisibility(View.VISIBLE);
+        }
+        catch (Exception e) {
+            Log.e("#####", e.toString());
+        }
     }
+
+
+    private void exitGame() {
+
+        Log.e("#####", "F: exitGame");
+        leaveRoom();
+       // switchToMainScreen();
+    }
+
+
+
+    // Leave the room.
+    void leaveRoom() {
+
+        Log.d(TAG, "Leaving room.");
+        Log.e("#####", "F: leaveRoom");
+        if (mGoogleApiClient != null && mRoomId != null) {
+
+            Games.RealTimeMultiplayer.leave(mGoogleApiClient, this, mRoomId);
+            mRoomId = null;
+            game_started = false;
+            GAME_STATE = GameState.NOT_IN_GAME;
+            switchToScreen(R.id.screen_wait);
+        }
+        else {
+            GAME_STATE = GameState.NOT_IN_GAME;
+            switchToMainScreen();
+        }
+        resetGameVars();
+    }
+
+
+
+    private void resetGameVars() {
+
+        Log.e("#####", "F: exitGame");
+        mRoom = null;
+        mRoomId = null;
+        game_started = false;
+        lobby_countdown_begun = false;
+        waitForIdLobby = true;
+        ready_players_map = null;
+        lobby_player_list_adapter = null;
+        lobby_countdown_seconds = 3;
+        current_game_mins = INITIAL_GAME_MINS;
+        current_game_secs = INITIAL_GAME_SECS;
+        player_list.clear();
+
+        game_over_text_view.setText("GAME OVER!!");
+
+        game_over_layout.setVisibility(View.GONE);
+        final_scoreboard_list_view.setVisibility(View.GONE);
+        lobby_countdown_view.setVisibility(View.GONE);
+        killed_view.setVisibility(View.GONE);
+
+
+
+        game_over_layout.removeView(game_chat_layout);
+        game_items_layout.addView(game_chat_layout);
+        game_chat_layout.setVisibility(View.GONE);
+
+        chat_array_list.clear();
+    }
+
 
 
 
@@ -1161,45 +1451,10 @@ public class MainActivity extends FragmentActivity
             case FLAG_BEEN_KILLED: receivedBeenKilledMessage(sender, buf); break;
             case FLAG_REQUEST_PICTURE: receivedPictureRequestMessage(sender, buf); break;
             case FLAG_PICTURE: receivedPictureMessage(sender, buf); break;
+            case FLAG_SCORE_KILL: receivedScoreKillMessage(sender, buf); break;
+            case FLAG_SCORE_DEATH: receivedScoreDeathMessage(sender, buf); break;
+            case FLAG_CHAT_MESSAGE: receivedChatMessage(sender, buf); break;
         }
-
-        /*
-        if(buf[0] == FLAG_LOBBY_READY) {
-
-            receivedLobbyReadyMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_COORDINATES) {
-
-            receiveCoordinateMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_GAME_STATE) {
-
-            receivedGameStateMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_KILL) {
-
-            receivedKillMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_TARGET) {
-
-            receivedTargetMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_HUNTER) {
-
-            receivedHunterMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_MESSAGE) {
-
-            receivedMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_BEEN_KILLED) {
-
-            receivedBeenKilledMessage(sender, buf);
-        }
-        else if(buf[0] == FLAG_PICTURE) {
-
-            receivedPictureMessage(sender, buf);
-        } */
     }
 
 
@@ -1394,7 +1649,7 @@ public class MainActivity extends FragmentActivity
     private void receivedPictureRequestMessage(String sender, byte[] buf) {
 
         Participant p = getParticipantById(sender);
-        Log.e("#####", "RECEIVED PICTURE REQUEST FROM " + p.getDisplayName());
+        Log.v("#####", "RECEIVED PICTURE REQUEST FROM " + p.getDisplayName());
         sendPictureMessage(p);
     }
 
@@ -1447,8 +1702,8 @@ public class MainActivity extends FragmentActivity
                 sub_message = ArrayUtils.addAll(iden_bytes, sub_message_bytes);
             }
 
-            Log.e("#####" ,"SENDING PICTURE: " + sub_message.length);
-            Log.e("#####" ,"i: " + i);
+            Log.v("#####", "SENDING PICTURRsE: " + sub_message.length);
+            Log.v("#####", "i: " + i);
             Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, sub_message,
                     mRoomId, p.getParticipantId());
 
@@ -1487,37 +1742,45 @@ public class MainActivity extends FragmentActivity
 
     private void receivedPictureMessage(String sender, byte[] data) {
 
-        Log.e("#####", "RECEIVED PICTURE MESSAGE (" + data[1] + "," + data[2] + "): " + data.length);
+        Log.v("#####", "RECEIVED PICTURE MESSAGE " + data.length);
 
-        //If the picture is null i.e. we are receiving a new picture, create a new arraylist of the specified size;
-        byte[] current_byte_array_array = ArrayUtils.subarray(data, 1,5);
-        ByteBuffer wrapped = ByteBuffer.wrap(current_byte_array_array);
-        int current_byte_array = wrapped.getInt(); //data[1] & 0xFF;
+        if(sender != null && target != null && sender.equals(target.getParticipantId())) {
 
-        byte[] total_byte_array_array = ArrayUtils.subarray(data, 5, 9);
-        ByteBuffer wrapped2 = ByteBuffer.wrap(total_byte_array_array);
-        int total_byte_array = wrapped2.getInt(); //data[2] & 0xFF;
+            try {
+                //If the picture is null i.e. we are receiving a new picture, create a new arraylist of the specified size;
+                byte[] current_byte_array_array = ArrayUtils.subarray(data, 1, 5);
+                ByteBuffer wrapped = ByteBuffer.wrap(current_byte_array_array);
+                int current_byte_array = wrapped.getInt(); //data[1] & 0xFF;
 
-        if(picture_byte_array_list == null) {
-            picture_byte_array_list = new ArrayList<>(total_byte_array);
-            for(int i = 0; i < total_byte_array; i++) {
-                picture_byte_array_list.add(null);
+                byte[] total_byte_array_array = ArrayUtils.subarray(data, 5, 9);
+                ByteBuffer wrapped2 = ByteBuffer.wrap(total_byte_array_array);
+                int total_byte_array = wrapped2.getInt(); //data[2] & 0xFF;
+
+                if (picture_byte_array_list == null) {
+                    picture_byte_array_list = new ArrayList<>(total_byte_array);
+                    for (int i = 0; i < total_byte_array; i++) {
+                        picture_byte_array_list.add(null);
+                    }
+                }
+
+                byte[] bitmap_data = ArrayUtils.subarray(data, 9, data.length);
+                picture_byte_array_list.set(current_byte_array, bitmap_data);
+
+                if (isFull()) {
+
+                    byte[] input_image = {};
+                    for (byte[] bx : picture_byte_array_list) {
+                        input_image = ArrayUtils.addAll(input_image, bx);
+                    }
+                    Log.e("######", "RECEIVED MESSAGE SIZE: " + input_image.length);
+                    Bitmap bitmap = BitmapFactory.decodeByteArray(input_image, 0, input_image.length);
+                    target_photo_view.setImageBitmap(bitmap);
+                    Log.e("#####", "PICTURE MESSAGE FULLY RECEIVED");
+                }
             }
-        }
-
-        byte[] bitmap_data = ArrayUtils.subarray(data, 9, data.length);
-        picture_byte_array_list.set(current_byte_array, bitmap_data);
-
-        if(isFull()) {
-
-            byte[] input_image = {};
-            for(byte[] bx: picture_byte_array_list) {
-                input_image = ArrayUtils.addAll(input_image, bx);
+            catch (Exception e) {
+                Log.e("#####", e.toString());
             }
-            Log.e("######", "RECEIVED MESSAGE SIZE: " + input_image.length);
-            Bitmap bitmap = BitmapFactory.decodeByteArray(input_image, 0, input_image.length);
-            target_photo_view.setImageBitmap(bitmap);
-            makeToast("PICTURE MESSAGE FULLY RECEIVED");
         }
     }
 
@@ -1542,21 +1805,18 @@ public class MainActivity extends FragmentActivity
         Location current_location = getLocation();
         byte[] message_bytes = createCoordinateMessage(current_location);
 
-        if(mParticipants != null && mRoom != null) {
-            for (Participant p : mParticipants) {
-                if (p.getParticipantId().equals(mMyId))
-                    continue;
-                if (p.getStatus() != Participant.STATUS_JOINED)
-                    continue;
+        if(mParticipants != null
+                && mRoom != null
+                && target != null
+                && hunter != null
+                && GAME_STATE == GameState.GAME_INPROGRESS
+                && !been_killed_wait) {
 
-                try {
-                    Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
-                            mRoomId, p.getParticipantId());
-                }
-                catch (Exception e) {
-                    endGame();
-                }
-            }
+            Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                    mRoomId, target.getParticipantId());
+
+            Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                    mRoomId, hunter.getParticipantId());
         }
     }
 
@@ -1633,9 +1893,6 @@ public class MainActivity extends FragmentActivity
                 else if(distance <= 20) progress = 100;
                 else progress = (70 - distance)*2;
                 hunter_distance_progress.setProgress(progress);
-                // map_tools.setDestCoordinates(lat, lng);
-                //Location l = getLocation();
-                //  map_tools.updateMap(l);
             }
         }
     }
@@ -1677,7 +1934,6 @@ public class MainActivity extends FragmentActivity
 
     private Player dead_player = null;
 
-
     private void receivedKillMessage(String sender, byte[] buf) {
 
         boolean kill_successful = (buf[1] == 0? true : false);
@@ -1714,19 +1970,9 @@ public class MainActivity extends FragmentActivity
                 dead_player = null;
             }
 
-
+            sendScoreKillMessage(current_player);
+            sendScoreDeathMessage(current_players_target);
             sendMessage(current_player.getParticipant().getDisplayName() + " has killed " + current_players_target.getParticipant().getDisplayName());
-
-            /*
-            Participant current_target = current_player.getTarget();
-            Participant new_target = getPlayerById(current_target.getParticipantId()).getTarget();
-            current_player.setTarget(new_target);
-
-            sendTargetMessage(current_player.getParticipant(), current_player.getTarget());
-            sendHunterMessage(current_player.getTarget(), current_player.getParticipant());
-
-
-            sendBeenKilledMessage(current_players_target.getParticipant()); */
         }
     }
 
@@ -1750,13 +1996,79 @@ public class MainActivity extends FragmentActivity
                     mRoomId, player.getParticipantId());
     }
 
+
     private void receivedBeenKilledMessage(String sender, byte[] buf) {
 
         makeToast("You have been killed by " + hunter.getDisplayName() + "!!!");
         boolean wait = (buf[1] == 1? true:false);
-
         if(wait)
             waitForGameResume();
+    }
+
+
+    private void sendScoreKillMessage(Player player) {
+
+        Log.e("#####", "Sending score kill message: " + player.getParticipant().getDisplayName());
+
+        String player_id = player.getId();
+        byte[] iden_bytes = {FLAG_SCORE_KILL};
+        byte[] info_bytes = player_id.getBytes(Charset.forName("UTF-8"));
+        byte[] message_bytes = ArrayUtils.addAll(iden_bytes, info_bytes);
+
+        for(Participant p: mParticipants) {
+
+            //Dont send message to self
+            if(p.getParticipantId().equals(mMyId))
+                receivedScoreKillMessage(mMyId, message_bytes);
+            else
+                Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                        mRoomId, p.getParticipantId());
+        }
+    }
+
+
+    private void receivedScoreKillMessage(String sender, byte[] message_bytes) {
+
+        byte[] player_id_bytes = ArrayUtils.subarray(message_bytes, 1, message_bytes.length);
+        String player_id = new String(player_id_bytes, Charset.forName("UTF-8"));
+        Player player = getPlayerById(player_id);
+        player.incrementKills();
+        scoreboard_player_adapter.notifyDataSetChanged();
+
+        Log.e("#####", "Received score kill message: " + player.getParticipant().getDisplayName());
+    }
+
+
+    private void sendScoreDeathMessage(Player player) {
+
+        Log.e("#####", "Sending score death message: " + player.getParticipant().getDisplayName());
+
+        String player_id = player.getId();
+        byte[] iden_bytes = {FLAG_SCORE_DEATH};
+        byte[] info_bytes = player_id.getBytes(Charset.forName("UTF-8"));
+        byte[] message_bytes = ArrayUtils.addAll(iden_bytes, info_bytes);
+
+        for(Participant p: mParticipants) {
+
+            //Dont send message to self
+            if(p.getParticipantId().equals(mMyId))
+                receivedScoreDeathMessage(mMyId, message_bytes);
+            else
+                Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                        mRoomId, p.getParticipantId());
+        }
+    }
+
+
+    private void receivedScoreDeathMessage(String sender, byte[] message_bytes) {
+
+        byte[] player_id_bytes = ArrayUtils.subarray(message_bytes, 1, message_bytes.length);
+        String player_id = new String(player_id_bytes, Charset.forName("UTF-8"));
+        Player player = getPlayerById(player_id);
+        player.incrementDeaths();
+        scoreboard_player_adapter.notifyDataSetChanged();
+
+        Log.e("#####", "Received score death message: " + player.getParticipant().getDisplayName());
 
     }
 
@@ -1796,6 +2108,45 @@ public class MainActivity extends FragmentActivity
         }
     }
 
+
+    private void sendChatMessage(String message) {
+
+        byte[] message_bytes = ArrayUtils.addAll(new byte[]{FLAG_CHAT_MESSAGE}, message.getBytes(Charset.forName("UTF-8")));
+        for(Participant p: mParticipants) {
+            if(p.getParticipantId().equals(mMyId)) {
+                receivedChatMessage(mMyId, message_bytes);
+            }
+            else {
+                Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+                        mRoomId, p.getParticipantId());
+            }
+        }
+    }
+
+
+    private void receivedChatMessage(String sender, byte[] buf) {
+
+        byte[] message_bytes = ArrayUtils.subarray(buf, 1, buf.length);
+        String message = new String(message_bytes, Charset.forName("UTF-8"));
+
+        Pair p = new Pair(getParticipantById(sender).getDisplayName(), message);
+        chat_array_list.add(p);
+        chat_list_adapter.notifyDataSetChanged();
+
+        //int current_pos = lobby_chat_list.get
+       // if(current_pos >= lobby_chat_list.getCount()-2)
+         //   lobby_chat_list.smoothScrollToPosition(lobby_chat_list.getCount()-1);
+    }
+
+
+    private void toggleShowChat() {
+
+        Log.e("#####", "F: toggleChat");
+        if(game_chat_layout.getVisibility() == View.GONE)
+            game_chat_layout.setVisibility(View.VISIBLE);
+        else
+            game_chat_layout.setVisibility(View.GONE);
+    }
 
 
     //==================================================================================================
@@ -1907,7 +2258,9 @@ public class MainActivity extends FragmentActivity
             R.id.button_quick_game, R.id.button_see_invitations, R.id.button_sign_in,
             R.id.button_sign_out, R.id.button_click_me, R.id.button_single_player,
             R.id.kill_button,
-            R.id.settings
+            R.id.settings,
+            R.id.exit_game_button,
+            R.id.show_chat_button
             // R.id.button_single_player_2
     };
 
@@ -1946,7 +2299,7 @@ public class MainActivity extends FragmentActivity
                 break;
             case R.id.button_invite_players:
                 // show list of invitable players
-                intent = Games.RealTimeMultiplayer.getSelectOpponentsIntent(mGoogleApiClient, 2, 7);
+                intent = Games.RealTimeMultiplayer.getSelectOpponentsIntent(mGoogleApiClient, MIN_PLAYERS, MAX_PLAYERS);
                 switchToScreen(R.id.screen_wait);
                 startActivityForResult(intent, RC_SELECT_PLAYERS);
                 break;
@@ -1975,6 +2328,12 @@ public class MainActivity extends FragmentActivity
                 break;
             case R.id.settings:
                 launchSettings();
+                break;
+            case R.id.exit_game_button:
+                exitGame();
+                break;
+            case R.id.show_chat_button:
+                toggleShowChat();
                 break;
         }
     }
@@ -2091,7 +2450,7 @@ public class MainActivity extends FragmentActivity
                 }
                 return true;
             case KeyEvent.KEYCODE_BACK:
-                if(game_started)
+                if(GAME_STATE.equals(GameState.GAME_INPROGRESS))
                     endGame();
                 else
                     switchToMainScreen();

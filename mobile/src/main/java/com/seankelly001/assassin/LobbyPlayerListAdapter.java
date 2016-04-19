@@ -8,9 +8,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
-import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.games.multiplayer.Participant;
 
@@ -28,7 +26,7 @@ public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
 
     public LobbyPlayerListAdapter(Context context, List<Participant> players, HashMap<String, Boolean> ready_players_map, String mMyId, View.OnClickListener listener) {
 
-        super(context, R.layout.lobby_player_layout, players);
+        super(context, R.layout.lobby_row_layout, players);
         this.ready_players_map = ready_players_map;
         this.mMyId = mMyId;
         this.listener = listener;
@@ -38,7 +36,7 @@ public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
     public View getView(final int position, View convertView, ViewGroup parent) {
 
         LayoutInflater inflater = LayoutInflater.from(getContext());
-        View view = inflater.inflate(R.layout.lobby_player_layout, parent, false);
+        View view = inflater.inflate(R.layout.lobby_row_layout, parent, false);
 
         Participant player = getItem(position);
         String player_name = player.getDisplayName();

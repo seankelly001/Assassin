@@ -11,4 +11,6 @@
 
     <color name="progress_light_blue">#33CCFF</color>
     <color name="progress_green">#FF009900</color>
+
+    <color name="gold">#FFB90F</color>
 </resources>

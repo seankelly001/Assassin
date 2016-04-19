@@ -116,46 +116,73 @@
 
 
     <!-- Lobby Screen -->
-    <LinearLayout android:id="@+id/screen_lobby" style="@style/LLScreen">
+    <LinearLayout android:id="@+id/screen_lobby"
+        style="@style/LLScreen"
+        android:layout_height="match_parent">
 
         <TextView android:id="@+id/lobby_countdown" style="@style/FigureLabel" android:visibility="invisible"/>
 
         <LinearLayout
             android:id="@+id/player_layout"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="1"
             android:orientation="horizontal"
+            android:layout_gravity="top"
             android:descendantFocusability="blocksDescendants"
             xmlns:android="http://schemas.android.com/apk/res/android">
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:textColor="@color/white"
                 android:text="Player"/>
-
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Ready"
-                android:textColor="@color/white"
-                />
+                android:textColor="@color/white" />
         </LinearLayout>
 
         <ListView
             android:id="@+id/lobby_player_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="5"
             android:layout_gravity="top">
         </ListView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:text="Chat"
+            android:gravity="center"/>
+
+        <ListView
+            android:id="@+id/lobby_chat_list"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="3"
+            android:layout_gravity="bottom"
+            android:transcriptMode="normal">
+        </ListView>
+
+        <EditText
+            android:id="@+id/chat_lobby_input"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:inputType="textAutoComplete"
+            android:hint="Chat with other players"
+            android:imeOptions="actionSend"
+            android:layout_marginBottom="40dp"/>
 
 
     </LinearLayout>
 
     <!-- Game Screen -->
-
      <LinearLayout
          android:layout_width="match_parent"
          android:layout_height="match_parent"
@@ -221,39 +248,50 @@
                          android:name="com.google.android.gms.maps.SupportMapFragment" />
 
                      <LinearLayout
-                         android:layout_width="wrap_content"
-                         android:layout_height="wrap_content"
+                         android:id="@+id/game_items_layout"
+                         android:layout_width="match_parent"
+                         android:layout_height="match_parent"
                          android:orientation="vertical">
 
                          <LinearLayout
-                             android:layout_width="wrap_content"
-                             android:layout_height="match_parent"
-                             android:orientation="horizontal">
-                             <Button
-                                 android:id="@+id/show_photo_button"
-                                 android:layout_width="wrap_content"
-                                 android:layout_height="30dp"
-                                 android:text="Photo"
-                                 android:padding="5dp"
-                                 android:background="@color/progress_green" />
-                             <Button
-                                 android:id="@+id/show_scoreboard_button"
-                                 android:layout_width="wrap_content"
-                                 android:layout_height="30dp"
-                                 android:text="Scoreboard"
-                                 android:padding="5dp"
-                                 android:background="@color/progress_green" />
+                             android:layout_width="match_parent"
+                             android:layout_height="30dp"
+                             android:orientation="horizontal"
+                             android:layoutDirection="rtl">
                              <TextView
                                  android:id="@+id/game_countdown_view"
                                  android:layout_width="wrap_content"
-                                 android:layout_height="30dp"
+                                 android:layout_height="match_parent"
                                  android:text="10:00"
-                                 android:layout_gravity="right"
+                                 android:layout_gravity="start"
                                  android:padding="5dp"
                                  android:textColor="@color/white"
                                  android:background="@color/black"
+                                 android:gravity="start"/>
+                             <Button
+                                 android:id="@+id/show_photo_button"
+                                 android:layout_width="30dp"
+                                 android:layout_height="match_parent"
+                                 android:background="@drawable/glyphicons_old_man"
                                  android:gravity="right"
-                                 />
+                                 android:layout_marginEnd="5dp"
+                                 android:clickable="true"/>
+                             <Button
+                                 android:id="@+id/show_scoreboard_button"
+                                 android:layout_width="30dp"
+                                 android:layout_height="match_parent"
+                                 android:background="@drawable/glyphicon_list_numbered"
+                                 android:gravity="right"
+                                 android:layout_marginEnd="5dp"
+                                 android:clickable="true"/>
+                             <Button
+                                 android:id="@+id/show_chat_button"
+                                 android:layout_width="30dp"
+                                 android:layout_height="match_parent"
+                                 android:background="@drawable/glyphicons_chat"
+                                 android:gravity="right"
+                                 android:layout_marginEnd="5dp"
+                                 android:clickable="true"/>
                          </LinearLayout>
 
                          <ImageView
@@ -261,7 +299,74 @@
                              android:layout_width="wrap_content"
                              android:layout_height="wrap_content"
                              android:visibility="gone"/>
+
+                         <LinearLayout
+                             android:id="@+id/scoreboard_layout"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:orientation="vertical"
+                             android:visibility="gone">
+                             <LinearLayout
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content"
+                                 style="@style/ScoreBoardRow">
+                                 <TextView
+                                     android:layout_width="0dp"
+                                     android:layout_height="wrap_content"
+                                     android:layout_weight="3"
+                                     android:text="Player"
+                                     style="@style/ScoreBoardTextView"/>
+                                 <TextView
+                                     android:layout_width="0dp"
+                                     android:layout_height="wrap_content"
+                                     android:layout_weight="1"
+                                     android:text="Kills"
+                                     style="@style/ScoreBoardTextView"/>
+                                 <TextView
+                                     android:layout_width="0dp"
+                                     android:layout_height="wrap_content"
+                                     android:layout_weight="1"
+                                     android:text="Deaths"
+                                     style="@style/ScoreBoardTextView"/>
+                                 <TextView
+                                     android:layout_width="0dp"
+                                     android:layout_height="wrap_content"
+                                     android:layout_weight="1"
+                                     android:text="KDR"
+                                     style="@style/ScoreBoardTextView"/>
+                             </LinearLayout>
+                             <ListView
+                                 android:id="@+id/scoreboard_view"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="wrap_content">
+                             </ListView>
+                         </LinearLayout>
+
+                         <LinearLayout
+                             android:id="@+id/game_chat_layout"
+                             android:layout_width="match_parent"
+                             android:layout_height="wrap_content"
+                             android:orientation="vertical"
+                             android:background="#aa000000"
+                             android:visibility="gone">
+                             <ListView
+                                 android:id="@+id/game_chat_list"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="200dp"
+                                 android:transcriptMode="normal">
+                             </ListView>
+                             <EditText
+                                 android:id="@+id/chat_game_input"
+                                 android:layout_width="match_parent"
+                                 android:layout_height="40dp"
+                                 android:inputType="textAutoComplete"
+                                 android:hint="Chat with other players"
+                                 android:imeOptions="actionSend"
+                                 android:layout_marginBottom="40dp"/>
+                         </LinearLayout>
+
                      </LinearLayout>
+
 
                      <Button
                          android:layout_width="match_parent"
@@ -297,7 +402,7 @@
 
             <!-- Been killed overlay -->
              <LinearLayout
-                 android:id="@+id/game_over_layout"
+                 android:id="@+id/game_gray_overlay_layout"
                  android:layout_width="match_parent"
                  android:layout_height="match_parent"
                  android:visibility="gone"
@@ -309,16 +414,15 @@
                  <TextView
                      android:id="@+id/killed_view"
                      android:layout_width="match_parent"
-                     android:layout_height="wrap_content"
+                     android:layout_height="40dp"
                      android:visibility="gone"
                      android:layout_gravity="center"
-                     android:text="YOU HAVE BEEN KILLED!!"
+                     android:text="YOU HAVE BEEN KILLED!! \n Please wait for a target to be assigned to you..."
                      android:gravity="center"
                      android:background="@color/black"
                      android:textColor="@color/white"
                      android:padding="5dp"
-                     android:layout_margin="200dp"
-                     />
+                     android:layout_margin="200dp" />
 
 
                  <LinearLayout
@@ -333,6 +437,7 @@
                      android:padding="5dp">
 
                      <TextView
+                         android:id="@+id/game_over_text_view"
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
                          android:layout_gravity="center"
@@ -342,7 +447,45 @@
                          android:textColor="@color/white"
                          android:padding="5dp"/>
 
+                     <LinearLayout
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content"
+                         style="@style/ScoreBoardRow">
+                         <TextView
+                             android:layout_width="0dp"
+                             android:layout_height="wrap_content"
+                             android:layout_weight="3"
+                             android:text="Player"
+                             style="@style/ScoreBoardTextView"/>
+                         <TextView
+                             android:layout_width="0dp"
+                             android:layout_height="wrap_content"
+                             android:layout_weight="1"
+                             android:text="Kills"
+                             style="@style/ScoreBoardTextView"/>
+                         <TextView
+                             android:layout_width="0dp"
+                             android:layout_height="wrap_content"
+                             android:layout_weight="1"
+                             android:text="Deaths"
+                             style="@style/ScoreBoardTextView"/>
+                         <TextView
+                             android:layout_width="0dp"
+                             android:layout_height="wrap_content"
+                             android:layout_weight="1"
+                             android:text="KDR"
+                             style="@style/ScoreBoardTextView"/>
+                     </LinearLayout>
+
+                     <ListView
+                         android:id="@+id/final_scoreboard_view"
+                         android:layout_width="match_parent"
+                         android:layout_height="wrap_content">
+                     </ListView>
+
+
                      <Button
+                         android:id="@+id/exit_game_button"
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
                          android:background="@color/progress_red"
@@ -351,12 +494,6 @@
                  </LinearLayout>
 
              </LinearLayout>
-
-
          </FrameLayout>
-
-
      </LinearLayout>
-
-
 </FrameLayout>

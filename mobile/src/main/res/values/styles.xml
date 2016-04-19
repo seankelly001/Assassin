@@ -203,4 +203,20 @@
         <item name="android:layout_marginBottom">20dp</item>
     </style>
 
+    <style name="ScoreBoardRow">
+        <item name="android:padding">3dp</item>
+        <item name="android:background">@drawable/scoreboard_row_background</item>
+    </style>
+
+    <style name="ScoreBoardTextView">
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+    <style name="GameShowButton">
+        <item name="android:background">@drawable/scoreboard_row_background</item>
+        <item name="android:textColor">@color/white</item>
+    </style>
+
+
+
 </resources>
