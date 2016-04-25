@@ -89,17 +89,15 @@
         <item name="android:layout_marginTop">40dp</item>
     </style>
 
-    <style name="GameButton">
+    <style name="MainScreenButton">
+        <item name="android:layout_marginBottom">10dp</item>
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">wrap_content</item>
-        <item name="android:background">@color/AccentColor</item>
+        <item name="android:background">@drawable/main_button_background</item>
         <item name="android:textColor">@color/ButtonTextColor</item>
-        <item name="android:paddingLeft">10dp</item>
-        <item name="android:paddingRight">10dp</item>
-    </style>
-
-    <style name="MainScreenButton" parent="@style/GameButton">
-        <item name="android:layout_marginBottom">10dp</item>
+        <item name="android:padding">10dp</item>
+        <item name="android:layout_margin">5dp</item>
+        <item name="android:hapticFeedbackEnabled">true</item>
     </style>
 
     <style name="MainScreenButtonBlurb" parent="@style/GameBlurb">
@@ -113,16 +111,6 @@
         <item name="android:textColor">@color/PopupTextColor</item>
         <item name="android:text">@string/inv_popup_text</item>
         <item name="android:gravity">center</item>
-    </style>
-
-    <style name="InvPopupButton" parent="@style/GameButton">
-        <item name="android:background">@color/ButtonTextColor</item>
-        <item name="android:textColor">@color/AccentColor</item>
-    </style>
-
-    <style name="SignOutButton" parent="@style/GameButton">
-        <item name="android:background">@color/SignOutButtonBackground</item>
-        <item name="android:textColor">@color/SignOutButtonTextColor</item>
     </style>
 
     <style name="FigureView">
@@ -215,6 +203,23 @@
     <style name="GameShowButton">
         <item name="android:background">@drawable/scoreboard_row_background</item>
         <item name="android:textColor">@color/white</item>
+    </style>
+
+
+    <style name="about_game_heading">
+        <item name="android:textSize">40sp</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/progress_red</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="about_game_content">
+        <item name="android:textSize">20sp</item>
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="android:visibility">gone</item>
     </style>
 
 

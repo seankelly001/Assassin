@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
 import android.util.Log;
+import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
@@ -57,23 +58,6 @@ public class SettingsActivity extends Activity implements View.OnClickListener {
         }
 
         selected_photo = (ImageView) findViewById(R.id.selected_photo_view);
-
-        hold_me = (Button) findViewById(R.id.hold_me);
-        hold_me.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if(event.getAction() == MotionEvent.ACTION_DOWN) {
-                    //makeToast("DOWN");
-                    selected_photo.setVisibility(View.VISIBLE);
-                }
-                else if(event.getAction() == MotionEvent.ACTION_UP) {
-                   // makeToast("UP");
-                    selected_photo.setVisibility(View.GONE);
-                }
-                return false;
-            }
-        });
-
     }
 
 
@@ -140,6 +124,8 @@ public class SettingsActivity extends Activity implements View.OnClickListener {
 
     @Override
     public void onClick(View v) {
+
+        v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
 
         switch (v.getId()) {
             case R.id.select_photo:

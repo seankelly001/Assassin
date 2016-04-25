@@ -20,14 +20,18 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.util.Pair;
+import android.view.HapticFeedbackConstants;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
@@ -122,7 +126,7 @@ public class MainActivity extends FragmentActivity
     private Room mRoom = null;
 
     // The participants in the currently active game
-    private ArrayList<Participant> mParticipants = null;
+    private final ArrayList<Participant> mParticipants = new ArrayList<>();
 
     // My participant ID in the currently active game
     private String mMyId = null;
@@ -170,63 +174,73 @@ public class MainActivity extends FragmentActivity
     private final char FLAG_CHAT_MESSAGE = 'M';
 
     //==============================================================================================
-    private ProgressBar target_distance_progress;
-    private TextView target_distance_text;
-
-    private ProgressBar hunter_distance_progress;
-    private TextView hunter_distance_text;
+    private ProgressBar target_distance_progress, hunter_distance_progress;
+    private TextView target_distance_text, hunter_distance_text, killed_view, game_over_text_view,
+                    lobby_countdown_view, game_countdown_view, target_view, hunter_view,
+                    recent_message_view;
 
     private ImageView target_photo_view;
     private AlertDialog image_alert_dialog;
+    private AlertDialog first_time_user_dialog;
 
-    private ListView final_scoreboard_list_view;
+    private ListView final_scoreboard_list_view, scoreboard_list_view, lobby_player_list_view,
+                    lobby_chat_list, game_chat_list;
 
-    private ListView scoreboard_list_view;
+    private Button show_photo_button, show_scoreboard_button,  kill_button;
 
-    private Button show_photo_button;
-    private Button show_scoreboard_button;
+    private LinearLayout scoreboard_layout, game_over_layout, game_over, game_items_layout,
+                        game_chat_layout, killed_gray_overlay_layout;
 
-    private LinearLayout scoreboard_layout;
-
-    private LinearLayout game_over_layout;
-    private LinearLayout game_over;
-    private TextView killed_view;
-
-    private TextView game_over_text_view;
-
-    private  LinearLayout game_items_layout;
-
-
-
-    private Button kill_button;
-
-    private ListView lobby_player_list_view;
-    private TextView lobby_countdown_view;
-
-    private ListView lobby_chat_list;
-    private EditText chat_lobby_input;
-
-    private LinearLayout game_chat_layout;
-    private ListView game_chat_list;
-    private EditText chat_game_input;
-
-    private TextView game_countdown_view;
-
-    private TextView target_view;
-    private TextView hunter_view;
+    private EditText chat_lobby_input, chat_game_input;
+    //==============================================================================================
 
     private ArrayList<Pair<String, String>> chat_array_list = new ArrayList<>();
     private ChatListAdapter chat_list_adapter;
+
+    private final int INITIAL_GAME_MINS = 5;
+    private final int INITIAL_GAME_SECS = 00;
+    private int current_game_mins = INITIAL_GAME_MINS;
+    private int current_game_secs = INITIAL_GAME_SECS;
+
+    private final int KILL_MAX_DISTANCE = 5;
+
+
+    //Lobby stuff
+    private static final HashMap<String, Boolean> ready_players_map = new HashMap<>();
+    private LobbyPlayerListAdapter lobby_player_list_adapter;
+
+    private boolean lobby_countdown_begun = false;
+    private final int INITIAL_LOBBY_COUNTDOWN_SECONDS = 3;
+    private int lobby_countdown_seconds = INITIAL_LOBBY_COUNTDOWN_SECONDS;
+    private boolean waitForIdLobby = true;
+
 
     //==============================================================================================
 
     private static SharedPreferences preferences;
     private static final String PREFERENCES_NAME = "com.seankelly001.assassin";
     private static final String IMAGE_PATH_KEY = "IMAGE_PATH_KEY";
+    private static final String FIRST_TIME_USER_KEY = "FIRST_TIME_USER_KEY";
 
     private static GameState GAME_STATE = GameState.NOT_IN_GAME;
 
-//==============================================================================================
+    //==============================================================================================
+
+    private final static int[] CLICKABLES = {
+            R.id.button_accept_popup_invitation, R.id.button_decline_popup_invitations,
+            R.id.button_invite_players,
+            R.id.button_quick_game, R.id.button_see_invitations, R.id.button_sign_in,
+            R.id.button_sign_out,
+            R.id.kill_button,
+            R.id.settings,
+            R.id.exit_game_button,
+            R.id.show_chat_button,
+            R.id.about_game
+            // R.id.button_single_player_2
+    };
+
+
+    //==============================================================================================
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -250,112 +264,8 @@ public class MainActivity extends FragmentActivity
         }
 
 
-        lobby_chat_list = (ListView) findViewById(R.id.lobby_chat_list);
-
-        chat_lobby_input = (EditText) findViewById(R.id.chat_lobby_input);
-        chat_lobby_input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-
-                if(actionId == EditorInfo.IME_ACTION_SEND) {
-
-                    String chat_input_string = chat_lobby_input.getText().toString();
-                    chat_lobby_input.setText("");
-                    sendChatMessage(chat_input_string);
-                    hideSoftKeyboard();
-                }
-                return false;
-            }
-        });
-
-        //private LinearLayout game_chat_layout;
-        //private ListView game_chat_list;
-        //private EditText chat_game_input;
-
-        game_chat_layout = (LinearLayout) findViewById(R.id.game_chat_layout);
-        game_chat_list = (ListView) findViewById(R.id.game_chat_list);
-        chat_game_input = (EditText) findViewById(R.id.chat_game_input);
-
-        chat_game_input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-
-                if(actionId == EditorInfo.IME_ACTION_SEND) {
-
-                    String chat_input_string = chat_game_input.getText().toString();
-                    chat_game_input.setText("");
-                    sendChatMessage(chat_input_string);
-                    hideSoftKeyboard();
-                }
-                return false;
-            }
-        });
-
-
-        target_photo_view = (ImageView) findViewById(R.id.target_image_view);
-        target_distance_progress = (ProgressBar) findViewById(R.id.target_distance_progress);
-        target_distance_text = (TextView) findViewById(R.id.target_distance_text);
-        hunter_distance_progress = (ProgressBar) findViewById(R.id.hunter_distance_progress);
-        hunter_distance_text = (TextView) findViewById(R.id.hunter_distance_text);
-
-        game_over_layout = (LinearLayout) findViewById(R.id.game_gray_overlay_layout);
-        game_over = (LinearLayout) findViewById(R.id.game_over);
-        killed_view = (TextView) findViewById(R.id.killed_view);
-        game_over_text_view = (TextView) findViewById(R.id.game_over_text_view);
-
-        game_items_layout = (LinearLayout) findViewById(R.id.game_items_layout);
-
-        lobby_countdown_view = (TextView) findViewById(R.id.lobby_countdown);
-        lobby_player_list_view = (ListView) findViewById(R.id.lobby_player_list);
-
-        target_view = (TextView) findViewById(R.id.target_name);
-        hunter_view = (TextView) findViewById(R.id.hunter_name);
-
-        final_scoreboard_list_view = (ListView) findViewById(R.id.final_scoreboard_view);
-
-        scoreboard_list_view = (ListView) findViewById(R.id.scoreboard_view);
-        scoreboard_layout = (LinearLayout) findViewById(R.id.scoreboard_layout);
-
-        kill_button = (Button) findViewById(R.id.kill_button);
-
-        show_photo_button = (Button) findViewById(R.id.show_photo_button);
-        //show_photo_button.getBackground();
-
-        show_photo_button.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    //makeToast("DOWN");
-                    //Log.e("#####", "DOWN");
-                    target_photo_view.setVisibility(View.VISIBLE);
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    // makeToast("UP");
-                    //Log.e("#####", "UP");
-                    target_photo_view.setVisibility(View.GONE);
-                }
-                return false;
-            }
-        });
-
-
-
-        show_scoreboard_button = (Button) findViewById(R.id.show_scoreboard_button);
-        show_scoreboard_button.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    //makeToast("DOWN");
-                    scoreboard_layout.setVisibility(View.VISIBLE);
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    // makeToast("UP");
-                    scoreboard_layout.setVisibility(View.GONE);
-                }
-                return false;
-            }
-        });
-
-
-
+        //Register the view from the layout
+        setUpViews();
 
 
         /*
@@ -371,8 +281,11 @@ public class MainActivity extends FragmentActivity
         }*/
 
 
+
+
         preferences = this.getSharedPreferences(PREFERENCES_NAME, 0);
-        checkImageFileExists();
+
+        checkFirstTimeUser();
 
         sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
         ROTATION_VECTOR_SUPPORTED = sensorManager.registerListener(this,
@@ -416,9 +329,6 @@ public class MainActivity extends FragmentActivity
                 new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.READ_EXTERNAL_STORAGE}
                 , MY_PERMISSIONS_REQUEST);
     }*/
-
-
-
 
            /*sensorManager.registerListener(this,
                 sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR),
@@ -620,6 +530,7 @@ public class MainActivity extends FragmentActivity
             Games.RealTimeMultiplayer.declineInvitation(mGoogleApiClient, invId);
             //TODO
             //REMOVE INVITATION FROM SCREEN
+            onInvitationRemoved(invId);
         }
     }
 
@@ -709,7 +620,8 @@ public class MainActivity extends FragmentActivity
         ((TextView) findViewById(R.id.incoming_invitation_text)).setText(
                 invitation.getInviter().getDisplayName() + " " +
                         getString(R.string.is_inviting_you));
-        switchToScreen(mCurScreen); // This will show the invitation popup
+        //switchToScreen(mCurScreen); // This will show the invitation popup
+        findViewById(R.id.invitation_popup).setVisibility(mIncomingInvitationId != null ? View.VISIBLE : View.GONE);
     }
 
 
@@ -718,7 +630,8 @@ public class MainActivity extends FragmentActivity
 
         if (mIncomingInvitationId!=null && mIncomingInvitationId.equals(invitationId)) {
             mIncomingInvitationId = null;
-            switchToScreen(mCurScreen); // This will hide the invitation popup
+            //switchToScreen(mCurScreen); // This will hide the invitation popup
+            findViewById(R.id.invitation_popup).setVisibility(View.GONE);
         }
     }
 
@@ -794,7 +707,10 @@ public class MainActivity extends FragmentActivity
         Log.e("#####", "F: onConnectedToRoom.");
 
         //get participants and my ID:
-        mParticipants = room.getParticipants();
+        //mParticipants = room.getParticipants();
+        mParticipants.clear();
+        mParticipants.addAll(room.getParticipants());
+
         mMyId = room.getParticipantId(Games.Players.getCurrentPlayerId(mGoogleApiClient));
 
         // save room ID if its not initialized in onRoomCreated() so we can leave cleanly before the game starts.
@@ -862,6 +778,7 @@ public class MainActivity extends FragmentActivity
         showWaitingRoom(room);
     }
 
+
     // Called when room is fully connected.
     @Override
     public void onRoomConnected(int statusCode, Room room) {
@@ -873,6 +790,7 @@ public class MainActivity extends FragmentActivity
         }
         updateRoom(room);
     }
+
 
     @Override
     public void onJoinedRoom(int statusCode, Room room) {
@@ -907,11 +825,13 @@ public class MainActivity extends FragmentActivity
 
 
     @Override
-    public void onP2PDisconnected(String participant) {
+    public void onP2PDisconnected(String participant_id) {
 
         Log.e("#####", "F: onP2PDisconnected");
         makeToast("Player has disconnected (2)");
-        endGame();
+        Participant p = getParticipantById(participant_id);
+        if(p != null)
+            participantLeft(p);
     }
 
 
@@ -933,8 +853,18 @@ public class MainActivity extends FragmentActivity
 
 
     @Override
-    public void onPeerLeft(Room room, List<String> peersWhoLeft) {
+    public void onPeerLeft(Room room, List<String> peers) {
         Log.e("#####", "F: onPeerLeft");
+        try {
+            for(String peer: peers) {
+                Participant p = getParticipantById(peer);
+                if(p != null) {
+                    makeToast(p.getDisplayName() + " has left");
+                    participantLeft(p);
+                }
+            }
+        }
+        catch (Exception e) {Log.e("#####", e.toString());}
         updateRoom(room);
     }
 
@@ -970,10 +900,12 @@ public class MainActivity extends FragmentActivity
         Log.e("#####", "F: onPeersDisconnected (1)");
         try {
             for(String peer: peers) {
-                String player_name = getParticipantById(peer).getDisplayName();
-                makeToast(player_name + " has disconnected (1)");
-                if(isHost())
-                    playerLeft(peer);
+
+                Participant p = getParticipantById(peer);
+                if(p != null) {
+                    makeToast(p.getDisplayName() + " has disconnected (1)");
+                    participantLeft(p);
+                }
             }
         }
         catch (Exception e) {Log.e("#####", e.toString());}
@@ -985,8 +917,10 @@ public class MainActivity extends FragmentActivity
     void updateRoom(Room room) {
 
         if (room != null) {
+           //mParticipants = room.getParticipants();
+            mParticipants.clear();
+            mParticipants.addAll(room.getParticipants());
 
-            mParticipants = room.getParticipants();
             Iterator<Participant> iter = mParticipants.iterator();
             while(iter.hasNext()){
                 Participant p = iter.next();
@@ -1004,8 +938,18 @@ public class MainActivity extends FragmentActivity
             if(GAME_STATE == GameState.GAME_INPROGRESS && mParticipants.size() <= MIN_PLAYERS) {
 
                 makeToast("THERE ARE NOT ENOUGH PLAYERS TO CONTINUE THE GAME");
-                game_over_text_view.setText("GAME OVER\n There are not enough players to continue the game");
-                gameOver();
+                //game_over_text_view.setText("GAME OVER\n There are not enough players to continue the game");
+                gameOver("There are not enough players to continue the game");
+            }
+            else if(GAME_STATE == GameState.IN_LOBBY) {
+
+                if(mParticipants.size() <= MIN_PLAYERS) {
+                    makeToast("THERE ARE NOT ENOUGH PLAYERS TO START THE GAME");
+                    leaveRoom();
+                }
+                else {
+                    lobby_player_list_adapter.notifyDataSetChanged();
+                }
             }
         }
     }
@@ -1014,7 +958,6 @@ public class MainActivity extends FragmentActivity
     private void checkStartLobby() {
 
         Log.e("#####", "F: checkStartLobby");
-        int player_count = 0;
         for(Participant p: mParticipants) {
             Log.e("#####", p.getDisplayName() + " : " + p.getStatus());
             if(p.getStatus() != Participant.STATUS_JOINED) return;
@@ -1025,37 +968,27 @@ public class MainActivity extends FragmentActivity
         startLobby();
     }
 
-
-    //==========================LOBBY STUFF ============================
-
-    private HashMap<String, Boolean> ready_players_map;
-    private ArrayAdapter lobby_player_list_adapter;
-
-    private boolean lobby_countdown_begun = false;
-    private final int INITIAL_LOBBY_COUNTDOWN_SECONDS = 3;
-    private int lobby_countdown_seconds = INITIAL_LOBBY_COUNTDOWN_SECONDS;
-    private boolean waitForIdLobby = true;
-
-
+    //==========================LOBBY STUFF ========================================================
 
     //Start the lobby
     void startLobby() {
 
         Log.e("#####", "F: startLobby");
-
         switchToScreen(R.id.screen_lobby);
         GAME_STATE = GameState.IN_LOBBY;
 
-        ready_players_map = new HashMap<>();
-        ready_players_map.put(mMyId, false);
+        //if(mMyId != null)
+       //     ready_players_map.put(mMyId, false);
+
         for (Participant p : mParticipants) {
 
             String p_id = p.getParticipantId();
-            if (p_id.equals(mMyId))
-                continue;
+           // if (p_id.equals(mMyId))
+            //    continue;
             if (p.getStatus() != Participant.STATUS_JOINED)
                 continue;
-            ready_players_map.put(p_id, false);
+            if(p_id != null)
+                ready_players_map.put(p_id, false);
         }
 
         View.OnClickListener listener = new View.OnClickListener() {
@@ -1066,7 +999,8 @@ public class MainActivity extends FragmentActivity
 
                 CheckBox player_ready_checkbox_view = (CheckBox) v;
                 boolean ready = player_ready_checkbox_view.isChecked();
-                ready_players_map.put(mMyId, ready);
+                if(mMyId != null)
+                    ready_players_map.put(mMyId, ready);
 
                 Log.e("#######", "I am ready: " + ready);
                 checkLobbyState();
@@ -1119,6 +1053,7 @@ public class MainActivity extends FragmentActivity
 
     public void stopLobbyCountdown() {
 
+        Log.e("#####", "Lobby countdown cancelled");
         lobby_countdown_view.setVisibility(View.INVISIBLE);
         lobby_countdown_view.setText("0:0" + INITIAL_LOBBY_COUNTDOWN_SECONDS);
         lobby_countdown_seconds = INITIAL_LOBBY_COUNTDOWN_SECONDS;
@@ -1143,6 +1078,7 @@ public class MainActivity extends FragmentActivity
         }, 1000);
     }
 
+
     // Game tick -- update countdown, check if game ended.
     void lobbyCountdownTick() {
 
@@ -1164,6 +1100,13 @@ public class MainActivity extends FragmentActivity
 
 
     private boolean hashMapBool(HashMap<String, Boolean> map) {
+
+        Iterator<HashMap.Entry<String,Boolean>> iter = map.entrySet().iterator();
+        while(iter.hasNext()) {
+            HashMap.Entry<String, Boolean> entry = iter.next();
+            if(entry == null)
+                iter.remove();
+        }
 
         for(String s: map.keySet()) {
 
@@ -1193,6 +1136,7 @@ public class MainActivity extends FragmentActivity
 
         game_started = true;
         GAME_STATE = GameState.GAME_INPROGRESS;
+        kill_button.setEnabled(false);
 
         Log.e("######", "Switching to map screen");
         switchToScreen(R.id.screen_map);
@@ -1221,7 +1165,6 @@ public class MainActivity extends FragmentActivity
 
             Log.e("#####", "AM HOST");
 
-
             int num_players = player_list.size();
 
             for(int i = 0; i < num_players; i++) {
@@ -1235,44 +1178,12 @@ public class MainActivity extends FragmentActivity
                 Player current_players_hunter = player_list.get((i == 0 ? num_players-1 : i-1));
                 setPlayersHunter(current_player, current_players_hunter);
             }
-
-
-            /*
-            player_list.add(new Player(getParticipantById(mMyId), target, hunter));
-
-            TextView target_view = (TextView) findViewById(R.id.target_name);
-            target_view.setText("TARGET: " + target.getDisplayName());
-            makeToast("Target is: " + target.getDisplayName());
-
-            TextView hunter_view = (TextView) findViewById(R.id.hunter_name);
-            hunter_view.setText("HUNTER: " + hunter.getDisplayName());
-            makeToast("Hunter is: " + hunter.getDisplayName());
-            sendPictureMessage(hunter);
-
-            //Start at i = 1, as you don't include yourself
-            for(int i = 1; i < num_participants; i++) {
-
-                //Make a new player in the list
-                Participant current = mParticipants.get(i);
-                Participant current_target = mParticipants.get((i + 1) % num_participants);
-                Participant current_hunter = mParticipants.get(i - 1);
-
-                player_list.add(new Player(current, current_target, current_hunter));
-
-                //Send target message
-                sendTargetMessage(current, current_target);
-                //Send hunter message
-                sendHunterMessage(current, current_hunter);
-            }*/
         }
 
 
         //Set up scoreboard
-
         scoreboard_player_adapter = new ScoreboardPlayerAdapter(this, player_list, mMyId, null);
         scoreboard_list_view.setAdapter(scoreboard_player_adapter);
-
-
 
         //send data periodically
         final int milliseconds = 1000;
@@ -1290,10 +1201,6 @@ public class MainActivity extends FragmentActivity
     }
 
 
-    private final int INITIAL_GAME_MINS = 1;
-    private final int INITIAL_GAME_SECS = 00;
-    private int current_game_mins = INITIAL_GAME_MINS;
-    private int current_game_secs = INITIAL_GAME_SECS;
 
 
     private void gameTick() {
@@ -1309,7 +1216,7 @@ public class MainActivity extends FragmentActivity
             //TODO
             makeToast("GAME HAS ENDED");
             GAME_STATE = GameState.GAME_ENDED;
-            gameOver();
+            gameOver("Time limit reached");
             return;
         }
         else if(current_game_secs == 0) {
@@ -1330,7 +1237,7 @@ public class MainActivity extends FragmentActivity
     }
 
 
-    private void gameOver() {
+    private void gameOver(String message) {
 
         makeToast("GAME OVER!");
         GAME_STATE = GameState.GAME_ENDED;
@@ -1349,6 +1256,8 @@ public class MainActivity extends FragmentActivity
         game_over_layout.setVisibility(View.VISIBLE);
         game_over.setVisibility(View.VISIBLE);
         final_scoreboard_list_view.setVisibility(View.VISIBLE);
+
+        game_over_text_view.setText("Game Over - " + message);
 
         try {
             game_items_layout.removeView(game_chat_layout);
@@ -1377,6 +1286,7 @@ public class MainActivity extends FragmentActivity
         Log.e("#####", "F: leaveRoom");
         if (mGoogleApiClient != null && mRoomId != null) {
 
+            Log.e("#####", "Leave room successful");
             Games.RealTimeMultiplayer.leave(mGoogleApiClient, this, mRoomId);
             mRoomId = null;
             game_started = false;
@@ -1391,16 +1301,16 @@ public class MainActivity extends FragmentActivity
     }
 
 
-
     private void resetGameVars() {
 
         Log.e("#####", "F: exitGame");
         mRoom = null;
         mRoomId = null;
+        mMyId = null;
         game_started = false;
         lobby_countdown_begun = false;
         waitForIdLobby = true;
-        ready_players_map = null;
+        ready_players_map.clear();
         lobby_player_list_adapter = null;
         lobby_countdown_seconds = 3;
         current_game_mins = INITIAL_GAME_MINS;
@@ -1412,17 +1322,78 @@ public class MainActivity extends FragmentActivity
         game_over_layout.setVisibility(View.GONE);
         final_scoreboard_list_view.setVisibility(View.GONE);
         lobby_countdown_view.setVisibility(View.GONE);
-        killed_view.setVisibility(View.GONE);
+        killed_gray_overlay_layout.setVisibility(View.GONE);
+
+        kill_button.setEnabled(false);
 
 
+        try {
 
-        game_over_layout.removeView(game_chat_layout);
-        game_items_layout.addView(game_chat_layout);
-        game_chat_layout.setVisibility(View.GONE);
+            if(game_over_layout.findViewById(R.id.game_chat_layout)!= null){
 
+                game_over_layout.removeView(game_chat_layout);
+                game_items_layout.addView(game_chat_layout);
+                game_chat_layout.setVisibility(View.GONE);
+                recent_message_view.setText("");
+            }
+        }
+        catch(IllegalStateException e) {
+            Log.e("#####", e.toString());
+        }
         chat_array_list.clear();
     }
 
+
+    private void participantLeft(Participant p) {
+
+        try {
+            ready_players_map.remove(p.getParticipantId());
+
+            if (p.equals(host)) {
+
+                makeToast("HOST HAS LEFT");
+
+                if(GAME_STATE == GameState.IN_LOBBY ) {
+                    leaveRoom();
+                }
+                else {
+                    player_list.remove(getPlayerById(host.getParticipantId()));
+                    gameOver("Host (" + p.getDisplayName() + ") has left the game");
+                }
+            }
+            else if (isHost()) {
+                Log.e("#####", "Player has left");
+                if (p.equals(dead_player)) {
+                    Log.e("#####", "Player was dead");
+                    dead_player = null;
+                } else {
+                    playerLeft(p.getParticipantId());
+                }
+            }
+        }
+        catch(Exception e) {
+            Log.e("#####", e.toString());
+        }
+    }
+
+
+    //Only host calls this method after players leaves to resolve the new game state
+    private void playerLeft(String sender_id) {
+
+        Log.e("#####", "F: playerLeft");
+        Player sender = getPlayerById(sender_id);
+        if(sender != null) {
+
+            Player senders_target = sender.getTarget();
+            Player senders_hunter = sender.getHunter();
+
+            setPlayersTarget(senders_hunter, senders_target);
+            setPlayersHunter(senders_target, senders_hunter);
+
+            player_list.remove(sender);
+            scoreboard_player_adapter.notifyDataSetChanged();
+        }
+    }
 
 
 
@@ -1442,7 +1413,7 @@ public class MainActivity extends FragmentActivity
         switch (buf[0]) {
 
             case FLAG_LOBBY_READY: receivedLobbyReadyMessage(sender, buf); break;
-            case FLAG_COORDINATES: receiveCoordinateMessage(sender, buf); break;
+            case FLAG_COORDINATES: receivedCoordinateMessage(sender, buf); break;
             case FLAG_GAME_STATE: receivedGameStateMessage(sender, buf); break;
             case FLAG_KILL: receivedKillMessage(sender, buf); break;
             case FLAG_TARGET: receivedTargetMessage(sender, buf); break;
@@ -1486,7 +1457,8 @@ public class MainActivity extends FragmentActivity
         int ready = (int) buf[1];
         boolean ready_bool = (ready == 0 ? true : false);
 
-        ready_players_map.put(sender, ready_bool);
+        if(sender != null)
+            ready_players_map.put(sender, ready_bool);
 
         Log.e("#########", "My Id: " + mMyId);
         Log.e("#########", "Message received from" + sender);
@@ -1512,7 +1484,9 @@ public class MainActivity extends FragmentActivity
             if(player_name.equals(sender_name)) {
 
                 check_box.setChecked(ready_bool);
-                ready_players_map.put(sender, ready_bool);
+                if(sender != null)
+
+                    ready_players_map.put(sender, ready_bool);
             }
 
             Log.e("#########", "Message Received, Player Ready States: " + ready_players_map.toString());
@@ -1567,7 +1541,7 @@ public class MainActivity extends FragmentActivity
 
     private void receivedTargetMessage(String sender, byte[] message_bytes) {
 
-        Log.e("######", "RECEIVED TARGER MESSAGE");
+        Log.e("######", "RECEIVED TARGET MESSAGE");
         Log.e("######", "SENDER: " + sender);
 
         byte[] target_bytes =  ArrayUtils.subarray(message_bytes, 1, message_bytes.length);
@@ -1585,7 +1559,10 @@ public class MainActivity extends FragmentActivity
             target_view.setText("TARGET: " + target.getDisplayName());
             makeToast("Target is: " + target.getDisplayName());
             sendRequestPictureMessage(target);
+
+            kill_button.setEnabled(true);
         }
+        flashView(target_distance_progress);
     }
 
 
@@ -1633,6 +1610,7 @@ public class MainActivity extends FragmentActivity
 
            // sendPictureMessage(hunter);
         }
+        flashView(hunter_distance_progress);
     }
 
 
@@ -1766,7 +1744,7 @@ public class MainActivity extends FragmentActivity
                 byte[] bitmap_data = ArrayUtils.subarray(data, 9, data.length);
                 picture_byte_array_list.set(current_byte_array, bitmap_data);
 
-                if (isFull()) {
+                if (isFull(picture_byte_array_list)) {
 
                     byte[] input_image = {};
                     for (byte[] bx : picture_byte_array_list) {
@@ -1785,16 +1763,11 @@ public class MainActivity extends FragmentActivity
     }
 
 
-    private boolean isFull() {
+    private boolean isFull(ArrayList<byte[]> list) {
 
-        int i = 0;
-        for(byte[] bx: picture_byte_array_list) {
-            if(bx == null) {
-
-                Log.e("#####", "" + i + " is null!!!");
+        for(byte[] bx: list) {
+            if(bx == null)
                 return false;
-            }
-            i++;
         }
         return true;
     }
@@ -1841,7 +1814,7 @@ public class MainActivity extends FragmentActivity
     }
 
 
-    private void receiveCoordinateMessage(String sender_id, byte[] message_bytes) {
+    private void receivedCoordinateMessage(String sender_id, byte[] message_bytes) {
 
         Log.v("------", "RECEIVED COORINATE MESSAGE");
         Log.v("------", "MESSAGE LENGTH:" + message_bytes.length);
@@ -1874,6 +1847,11 @@ public class MainActivity extends FragmentActivity
                 else if(distance <= 20) progress = 100;
                 else progress = (70 - distance) *2;
                 target_distance_progress.setProgress(progress);
+
+                if(distance < KILL_MAX_DISTANCE)
+                    kill_button.setEnabled(true);
+                else
+                    kill_button.setEnabled(false);
 
             }
             //Received hunter coordinates
@@ -1912,7 +1890,10 @@ public class MainActivity extends FragmentActivity
 
             boolean kill_succesful = distance < 5;
 
-            if(kill_succesful) makeToast("KILL SUCCESFUL");
+            if(kill_succesful) {
+                makeToast("KILL SUCCESFUL");
+                kill_button.setEnabled(false);
+            }
             else makeToast("KILL FAILED");
 
             byte[] message_bytes = {FLAG_KILL, (byte)(kill_succesful? 0 : 1)};
@@ -1926,8 +1907,8 @@ public class MainActivity extends FragmentActivity
                         mRoomId, host.getParticipantId());
             }
 
-            Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
-                    mRoomId, target.getParticipantId());
+          //  Games.RealTimeMultiplayer.sendReliableMessage(mGoogleApiClient, null, message_bytes,
+          //          mRoomId, target.getParticipantId());
         }
     }
 
@@ -2000,7 +1981,12 @@ public class MainActivity extends FragmentActivity
     private void receivedBeenKilledMessage(String sender, byte[] buf) {
 
         makeToast("You have been killed by " + hunter.getDisplayName() + "!!!");
-        boolean wait = (buf[1] == 1? true:false);
+
+        Vibrator v = (Vibrator) this.getSystemService(Context.VIBRATOR_SERVICE);
+        // Vibrate for 500 milliseconds
+        v.vibrate(500);
+        boolean wait = (buf[1] == 1);
+
         if(wait)
             waitForGameResume();
     }
@@ -2065,9 +2051,13 @@ public class MainActivity extends FragmentActivity
         byte[] player_id_bytes = ArrayUtils.subarray(message_bytes, 1, message_bytes.length);
         String player_id = new String(player_id_bytes, Charset.forName("UTF-8"));
         Player player = getPlayerById(player_id);
-        player.incrementDeaths();
-        scoreboard_player_adapter.notifyDataSetChanged();
-
+        if(player != null) {
+            player.incrementDeaths();
+            scoreboard_player_adapter.notifyDataSetChanged();
+        }
+        else {
+            Log.e("#####", "Player is null!!");
+        }
         Log.e("#####", "Received score death message: " + player.getParticipant().getDisplayName());
 
     }
@@ -2075,38 +2065,35 @@ public class MainActivity extends FragmentActivity
 
     private void waitForGameResume() {
 
+        Log.e("#####", "F; waitForGameResume");
         been_killed_wait = true;
         hunter = null;
         target = null;
         kill_button.setClickable(false);
-        game_over_layout.setVisibility(View.VISIBLE);
-        killed_view.setVisibility(View.VISIBLE);
+        //game_over_layout.setVisibility(View.VISIBLE);
+        killed_gray_overlay_layout.setVisibility(View.VISIBLE);
+
+        target_distance_progress.setProgressDrawable(getResources().getDrawable(R.drawable.progressbar_disabled));
+        hunter_distance_progress.setProgressDrawable(getResources().getDrawable(R.drawable.progressbar_disabled));
+        target_distance_progress.setProgress(0);
+        hunter_distance_progress.setProgress(0);
+
+        hunter_distance_text.setText("");
+        target_distance_text.setText("");
+
+        show_photo_button.setEnabled(false);
     }
 
     private void gameResume() {
 
         been_killed_wait = false;
         kill_button.setClickable(true);
-        game_over_layout.setVisibility(View.GONE);
-        killed_view.setVisibility(View.GONE);
+        killed_gray_overlay_layout.setVisibility(View.GONE);
+        target_distance_progress.setProgressDrawable(getResources().getDrawable(R.drawable.progressbar_target));
+        hunter_distance_progress.setProgressDrawable(getResources().getDrawable(R.drawable.progressbar_hunter));
+        show_photo_button.setEnabled(true);
     }
 
-
-    //Only host calls this method after players leaves to resolve the new game state
-    private void playerLeft(String sender_id) {
-
-        Player sender = getPlayerById(sender_id);
-        if(sender != null) {
-
-            Player senders_target = sender.getTarget();
-            Player senders_hunter = sender.getHunter();
-
-            setPlayersTarget(senders_hunter, senders_target);
-            setPlayersHunter(senders_target, senders_hunter);
-
-            player_list.remove(sender);
-        }
-    }
 
 
     private void sendChatMessage(String message) {
@@ -2132,18 +2119,33 @@ public class MainActivity extends FragmentActivity
         Pair p = new Pair(getParticipantById(sender).getDisplayName(), message);
         chat_array_list.add(p);
         chat_list_adapter.notifyDataSetChanged();
+        recent_message_view.setText(getParticipantById(sender).getDisplayName() + ": " + message);
 
-        //int current_pos = lobby_chat_list.get
-       // if(current_pos >= lobby_chat_list.getCount()-2)
-         //   lobby_chat_list.smoothScrollToPosition(lobby_chat_list.getCount()-1);
+        flashView(recent_message_view);
+        //recent_message_view.startAnimation(anim);
+    }
+
+
+    private void flashView(View v) {
+
+        if(v != null) {
+            Animation anim = new AlphaAnimation(0.5f, 1.0f);
+            anim.setDuration(200); //You can manage the time of the blink with this parameter
+            anim.setStartOffset(20);
+            v.startAnimation(anim);
+        }
     }
 
 
     private void toggleShowChat() {
 
         Log.e("#####", "F: toggleChat");
-        if(game_chat_layout.getVisibility() == View.GONE)
+        if(game_chat_layout.getVisibility() == View.GONE) {
             game_chat_layout.setVisibility(View.VISIBLE);
+            chat_game_input.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.showSoftInput(chat_game_input, InputMethodManager.SHOW_IMPLICIT);
+        }
         else
             game_chat_layout.setVisibility(View.GONE);
     }
@@ -2184,7 +2186,8 @@ public class MainActivity extends FragmentActivity
         target_photo_view = (ImageView) findViewById(R.id.target_image_view);
         preferences = this.getSharedPreferences(PREFERENCES_NAME, 0);
 
-        checkImageFileExists();
+        if(first_time_user_dialog == null || !first_time_user_dialog.isShowing())
+            checkImageFileExists();
     }
 
 
@@ -2211,6 +2214,13 @@ public class MainActivity extends FragmentActivity
     private void launchSettings() {
 
         Intent intent = new Intent(this, SettingsActivity.class);
+        this.startActivity(intent);
+    }
+
+    private void launchAboutGame() {
+
+        Log.e("#####", "Launching about game");
+        Intent intent = new Intent(this, AboutGameActivity.class);
         this.startActivity(intent);
     }
 
@@ -2252,27 +2262,18 @@ public class MainActivity extends FragmentActivity
 
     // This array lists everything that's clickable, so we can install click
     // event handlers.
-    private final static int[] CLICKABLES = {
-            R.id.button_accept_popup_invitation, R.id.button_decline_popup_invitations,
-            R.id.button_invite_players,
-            R.id.button_quick_game, R.id.button_see_invitations, R.id.button_sign_in,
-            R.id.button_sign_out, R.id.button_click_me, R.id.button_single_player,
-            R.id.kill_button,
-            R.id.settings,
-            R.id.exit_game_button,
-            R.id.show_chat_button
-            // R.id.button_single_player_2
-    };
 
 
     @Override
     public void onClick(View v) {
         Intent intent;
 
-        v.performHapticFeedback(View.HAPTIC_FEEDBACK_ENABLED);
+        Log.e("#####", "Haptic enabled: " + v.isHapticFeedbackEnabled());
+        v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
 
 
         switch (v.getId()) {
+
 
             case R.id.button_sign_in:
                 // user wants to sign in
@@ -2329,6 +2330,9 @@ public class MainActivity extends FragmentActivity
             case R.id.settings:
                 launchSettings();
                 break;
+            case R.id.about_game:
+                launchAboutGame();
+                break;
             case R.id.exit_game_button:
                 exitGame();
                 break;
@@ -2341,8 +2345,8 @@ public class MainActivity extends FragmentActivity
 
     // This array lists all the individual screens our game has.
     private final static int[] SCREENS = {
-            R.id.screen_game, R.id.screen_main, R.id.screen_sign_in,
-            R.id.screen_wait, R.id.screen_lobby, R.id.screen_map
+            R.id.screen_main, R.id.screen_sign_in, R.id.screen_wait, R.id.screen_lobby,
+            R.id.screen_map
     };
     int mCurScreen = -1;
 
@@ -2363,7 +2367,7 @@ public class MainActivity extends FragmentActivity
         }
         else {
             // single-player: show on main screen and gameplay screen
-            showInvPopup = (mCurScreen == R.id.screen_main || mCurScreen == R.id.screen_game);
+            showInvPopup = (mCurScreen == R.id.screen_main);
         }
         findViewById(R.id.invitation_popup).setVisibility(showInvPopup ? View.VISIBLE : View.GONE);
     }
@@ -2426,6 +2430,7 @@ public class MainActivity extends FragmentActivity
         return null;
     }
 
+
     private Player getPlayerById(String id) {
         for(Player p: player_list) {
             if(p.getId().equals(id))
@@ -2433,6 +2438,7 @@ public class MainActivity extends FragmentActivity
         }
         return null;
     }
+
 
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
@@ -2450,16 +2456,128 @@ public class MainActivity extends FragmentActivity
                 }
                 return true;
             case KeyEvent.KEYCODE_BACK:
-                if(GAME_STATE.equals(GameState.GAME_INPROGRESS))
-                    endGame();
-                else
-                    switchToMainScreen();
-                return true;
+                if(action == KeyEvent.ACTION_DOWN) {
+                    Log.e("#####", "BACK BUTTON PRESS");
+                    if (GAME_STATE.equals(GameState.GAME_INPROGRESS)) {
+
+                        if (leave_game_alert != null && leave_game_alert.isShowing()) {
+                            leave_game_alert.dismiss();
+                            return true;
+                        } else if (game_chat_layout.getVisibility() == View.VISIBLE) {
+                            Log.e("#####", " CHAT IS VISIBLE");
+                            game_chat_layout.setVisibility(View.GONE);
+                            return true;
+                        } else {
+                            confirmLeaveGame();
+                            return true;
+                            //endGame();
+                        }
+                    }
+                    else if(GAME_STATE == GameState.IN_LOBBY) {
+                        confirmLeaveLobby();
+                    }
+                    else if(mCurScreen ==  R.id.screen_main) {
+                        finish();
+                        System.exit(0);
+                    }
+                    else
+                        switchToMainScreen();
+                    return true;
+
+                }
             default:
                 return super.dispatchKeyEvent(event);
         }
     }
 
+
+    AlertDialog leave_game_alert;
+    private void confirmLeaveGame() {
+
+        Log.e("#####", "F: confirmLeaveGame");
+        leave_game_alert = new AlertDialog.Builder(this)
+            .setTitle("Leave Game?")
+            .setMessage("Are you sure you want to leave the game?")
+            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    endGame();
+                }
+            })
+            .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    Log.e("######", "Alert cancelled");
+                    dialog.dismiss();
+                }
+            })
+            .show();
+    }
+
+    AlertDialog leave_lobby_alert;
+    private void confirmLeaveLobby() {
+
+        Log.e("#####", "F: confirmLeaveLobby");
+        leave_game_alert = new AlertDialog.Builder(this)
+            .setTitle("Leave Lobby?")
+                .setMessage("Are you sure you want to leave the lobby?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        leaveRoom();
+                }
+                })
+                .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        Log.e("######", "Alert cancelled");
+                        dialog.dismiss();
+                    }
+            })
+            .show();
+    }
+
+
+    private boolean checkFirstTimeUser() {
+
+        boolean first_time_user = preferences.getBoolean(FIRST_TIME_USER_KEY, true);
+        if(first_time_user) {
+            Log.e("#####", "FIRST TIME USER");
+            preferences.edit().putBoolean(FIRST_TIME_USER_KEY, false).commit();
+            makeFirstTimeUserDialog();
+        }
+        return first_time_user;
+    }
+
+
+    private void makeFirstTimeUserDialog() {
+
+        //Don't make a new alert if one is already showing
+        //If it is null, need to make new one
+        if(first_time_user_dialog == null || !first_time_user_dialog.isShowing()) {
+
+            first_time_user_dialog = new AlertDialog.Builder(this)
+                    .setTitle("First Time User")
+                    .setMessage("You are playing this game for the first time, would you like to" +
+                            "see how this app works?")
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            makeToast("YES SELECTED");
+                            launchAboutGame();
+                        }
+                    })
+                    .setNegativeButton("No", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            makeToast("NO SELECTED");
+                            checkImageFileExists();
+                        }
+                    })
+                    .setCancelable(false)
+                    .show();
+        }
+    }
 
     private void checkImageFileExists() {
 
@@ -2503,6 +2621,7 @@ public class MainActivity extends FragmentActivity
                         public void onClick(DialogInterface dialog, int which) {
                             makeToast("CANCEL SELECTED");
                             finish();
+                            System.exit(0);
                         }
                     })
                     .setCancelable(false)
@@ -2542,6 +2661,104 @@ public class MainActivity extends FragmentActivity
     }
 
 
+    //TODO REFACTOR
+    private void setUpViews() {
+
+        target_distance_text = (TextView) findViewById(R.id.target_distance_text);
+        hunter_distance_text = (TextView) findViewById(R.id.hunter_distance_text);
+        killed_view = (TextView) findViewById(R.id.killed_view);
+        game_over_text_view = (TextView) findViewById(R.id.game_over_text_view);
+        lobby_countdown_view = (TextView) findViewById(R.id.lobby_countdown);
+        target_view = (TextView) findViewById(R.id.target_name);
+        hunter_view = (TextView) findViewById(R.id.hunter_name);
+        recent_message_view = (TextView) findViewById(R.id.recent_message_text_view);
+
+
+        lobby_player_list_view = (ListView) findViewById(R.id.lobby_player_list);
+        lobby_chat_list = (ListView) findViewById(R.id.lobby_chat_list);
+        game_chat_list = (ListView) findViewById(R.id.game_chat_list);
+        final_scoreboard_list_view = (ListView) findViewById(R.id.final_scoreboard_view);
+
+        scoreboard_list_view = (ListView) findViewById(R.id.scoreboard_view);
+
+        game_chat_layout = (LinearLayout) findViewById(R.id.game_chat_layout);
+        game_over_layout = (LinearLayout) findViewById(R.id.game_gray_overlay_layout);
+        game_over = (LinearLayout) findViewById(R.id.game_over);
+        game_items_layout = (LinearLayout) findViewById(R.id.game_items_layout);
+        scoreboard_layout = (LinearLayout) findViewById(R.id.scoreboard_layout);
+        killed_gray_overlay_layout = (LinearLayout) findViewById(R.id.killed_gray_overlay_layout);
+
+
+        target_photo_view = (ImageView) findViewById(R.id.target_image_view);
+
+        target_distance_progress = (ProgressBar) findViewById(R.id.target_distance_progress);
+        hunter_distance_progress = (ProgressBar) findViewById(R.id.hunter_distance_progress);
+
+
+        kill_button = (Button) findViewById(R.id.kill_button);
+        show_photo_button = (Button) findViewById(R.id.show_photo_button);
+        show_photo_button.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    //makeToast("DOWN");
+                    //Log.e("#####", "DOWN");
+                    target_photo_view.setVisibility(View.VISIBLE);
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    // makeToast("UP");
+                    //Log.e("#####", "UP");
+                    target_photo_view.setVisibility(View.GONE);
+                }
+                return false;
+            }
+        });
+        show_scoreboard_button = (Button) findViewById(R.id.show_scoreboard_button);
+        show_scoreboard_button.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    //makeToast("DOWN");
+                    scoreboard_layout.setVisibility(View.VISIBLE);
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    // makeToast("UP");
+                    scoreboard_layout.setVisibility(View.GONE);
+                }
+                return false;
+            }
+        });
+
+
+        chat_lobby_input = (EditText) findViewById(R.id.chat_lobby_input);
+        chat_lobby_input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                if (actionId == EditorInfo.IME_ACTION_SEND) {
+
+                    String chat_input_string = chat_lobby_input.getText().toString();
+                    chat_lobby_input.setText("");
+                    sendChatMessage(chat_input_string);
+                    hideSoftKeyboard();
+                }
+                return false;
+            }
+        });
+        chat_game_input = (EditText) findViewById(R.id.chat_game_input);
+        chat_game_input.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+
+                if (actionId == EditorInfo.IME_ACTION_SEND) {
+
+                    String chat_input_string = chat_game_input.getText().toString();
+                    chat_game_input.setText("");
+                    sendChatMessage(chat_input_string);
+                    hideSoftKeyboard();
+                }
+                return false;
+            }
+        });
+    }
 
 
 //==================================================================================================
@@ -2613,4 +2830,6 @@ public class MainActivity extends FragmentActivity
 
         }
     }
+
+
 }

@@ -20,13 +20,13 @@ import java.util.List;
  */
 public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
 
-    private final HashMap<String, Boolean> ready_players_map;
+    private static HashMap<String, Boolean> ready_players_map;
     private final String mMyId;
     private final View.OnClickListener listener;
 
     public LobbyPlayerListAdapter(Context context, List<Participant> players, HashMap<String, Boolean> ready_players_map, String mMyId, View.OnClickListener listener) {
 
-        super(context, R.layout.lobby_row_layout, players);
+        super(context, R.layout.lobby_player_row_layout, players);
         this.ready_players_map = ready_players_map;
         this.mMyId = mMyId;
         this.listener = listener;
@@ -36,7 +36,7 @@ public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
     public View getView(final int position, View convertView, ViewGroup parent) {
 
         LayoutInflater inflater = LayoutInflater.from(getContext());
-        View view = inflater.inflate(R.layout.lobby_row_layout, parent, false);
+        View view = inflater.inflate(R.layout.lobby_player_row_layout, parent, false);
 
         Participant player = getItem(position);
         String player_name = player.getDisplayName();
@@ -78,5 +78,8 @@ public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
 
         return view;
     }
+
+
+
 
 }

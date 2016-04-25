@@ -106,11 +106,11 @@ public class MapTools {
                 small_b = Bitmap.createScaledBitmap(b, b.getWidth() / 20, b.getHeight() / 20, false);
             }
 
-                arrow_marker = mMap.addMarker(
-                        new MarkerOptions()
-                                .position(current_lat_lang)
-                                .title("Current Location")
-                                .icon(BitmapDescriptorFactory.fromBitmap(small_b)));
+            arrow_marker = mMap.addMarker(
+                    new MarkerOptions()
+                            .position(current_lat_lang)
+                            .title("Current Location")
+                            .icon(BitmapDescriptorFactory.fromBitmap(small_b)));
 
         }
         else {
@@ -139,16 +139,24 @@ public class MapTools {
             Log.v("HEADING", "bearing 2: " + bearing);
 
             float rotation = bearing - old_heading;
+           // rotation -= 45.0;
             Log.v("HEADING", "rotation: " + rotation);
 
             if (direction_marker == null) {
 
+                Drawable d = context.getResources().getDrawable(R.drawable.arc_final);
+                BitmapDrawable bd = (BitmapDrawable) d;
+                Bitmap b = bd.getBitmap();
+                Bitmap small_b = Bitmap.createScaledBitmap(b, b.getWidth() / 6, b.getHeight() / 6, false);
+
                 direction_marker = mMap.addMarker(
                         new MarkerOptions()
-                                .position(current_lat_lang)
                                 .title("Current Location")
-                                .icon(BitmapDescriptorFactory.fromResource(R.drawable.arc))
+                                        //.icon(BitmapDescriptorFactory.fromResource(R.drawable.arc_final).w)
+                                .icon(BitmapDescriptorFactory.fromBitmap(small_b))
+                               // .anchor(0.5f, 0.5f)
                                 .rotation(rotation)
+                                .position(current_lat_lang)
                 );
             } else {
 
