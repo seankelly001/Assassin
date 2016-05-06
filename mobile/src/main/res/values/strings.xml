@@ -34,6 +34,11 @@
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="decline_popup_invire">Decline!</string>
+    <string name="about_game_objective">Assassin is a game designed to be played in crowded pedestrian areas. Each player has somsone chasing them (their \'Hunter\') and are in turn chasing someone (their \'target\'). Each player will know the general direction of their target. They also have a vague idea of how close both their hunter and target are. When a player is close enough to their target, they may attempt to \'kill\' them. The objective of the game is to be inconspicuous and to blend in to the crowd, as if you are obvious, your hunter will see you from afar. The player with the most kills and least deaths at the end of the game is the winner.</string>
+    <string name="about_game_invite">This button will bring you to a screen where you can invite your friends. People in your Google+ Circles are show, as well as players you have recently played with. \n You may invite between 3 to 7 people. If not enough people join, the game can not start.</string>
+    <string name="about_game_quick">This will allow you to automatch with players also looking to play. Game requires 4-8 people total to begin</string>
+    <string name="about_game_lobby">When all players have been invited, they will be brought to a pre-game lobby. Here they can talk to each other using the Chat feature. Each player can \'Ready Up\' Here, and once all players are ready to begin, a countdown will start and the game will begin.</string>
+    <string name="about_game_rules">Each player will be assigned a target and hunter at the beginning of the game. You can kill your target if you are close enough to them. If you are killed, you will be notified and you will have to wait until someone else has been killed. However, if someone else has already been killed and is waiting, then you will not have to wait i.e. every odd person has to wait. Both players will then be assigned new target and hunters. The game ends when the time limit is reached. The player with the highest kill-death ration (KDR) wins the game.</string>
 
 
 </resources>

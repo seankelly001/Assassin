@@ -58,22 +58,12 @@ public class MapTools {
         destLocation.setLatitude(lat);
         destLocation.setLongitude(lng);
         destReceived = true;
-
-    }
-
-
-    public void setmLastLocation(Location mLastLocation) {
-        this.mLastLocation = mLastLocation;
     }
 
 
     public void updateMap(Location current_location) {
 
         Log.v("#######", "UPDATING MAP");
-
-        if(mMap == null)  Log.e("#######","MAP IS NULL");
-        if(current_location == null)  Log.e("#######","LOCATION IS NULL");
-
         if(mMap != null && current_location != null){
 
             mLastLocation = current_location;
@@ -84,7 +74,6 @@ public class MapTools {
 
 
     private void updateMapMarkers(Location current_location) {
-
 
         LatLng current_lat_lang = new LatLng(current_location.getLatitude(), current_location.getLongitude());
 

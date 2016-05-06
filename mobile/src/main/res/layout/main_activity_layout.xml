@@ -11,23 +11,19 @@
     <LinearLayout
         android:id="@+id/screen_sign_in"
         style="@style/LLScreen">
-
         <TextView style="@style/GameTitle" />
         <TextView style="@style/GameBlurb" />
-
         <com.google.android.gms.common.SignInButton android:id="@+id/button_sign_in"
             style="@style/SignInButton" />
-
     </LinearLayout>
 
-    <!-- MAIN SCREEN -->
 
+    <!-- MAIN SCREEN -->
     <LinearLayout
         android:id="@+id/screen_main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:visibility="gone">
-
 
         <ScrollView
             android:layout_width="match_parent"
@@ -93,14 +89,13 @@
 
     <!-- "PLEASE WAIT" SCREEN -->
     <LinearLayout android:id="@+id/screen_wait" style="@style/LLScreen">
-        <TextView style="@style/Blurb" android:text="@string/please_wait" />
+        <TextView style="@style/Blurb" android:text="@string/please_wait"/>
         <ProgressBar
             android:id="@+id/wait_progress_bar"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content"
             style="?android:attr/progressBarStyleLarge"
-            android:indeterminateDrawable="@drawable/wait_progress"
-            />
+            android:indeterminateDrawable="@drawable/wait_progress"/>
     </LinearLayout>
 
 
@@ -109,7 +104,9 @@
         style="@style/LLScreen"
         android:layout_height="match_parent">
 
-        <TextView android:id="@+id/lobby_countdown" style="@style/FigureLabel" android:visibility="invisible"/>
+        <TextView android:id="@+id/lobby_countdown"
+            style="@style/FigureLabel"
+            android:visibility="invisible"/>
 
         <LinearLayout
             android:id="@+id/player_layout"
@@ -133,7 +130,6 @@
                 android:text="Ready"
                 android:textColor="@color/white" />
         </LinearLayout>
-
         <ListView
             android:id="@+id/lobby_player_list"
             android:layout_width="match_parent"
@@ -148,7 +144,6 @@
             android:layout_weight="1"
             android:text="Chat"
             android:gravity="center"/>
-
         <ListView
             android:id="@+id/lobby_chat_list"
             android:layout_width="match_parent"
@@ -157,7 +152,6 @@
             android:layout_gravity="bottom"
             android:transcriptMode="normal">
         </ListView>
-
         <EditText
             android:id="@+id/chat_lobby_input"
             android:layout_width="match_parent"
@@ -168,10 +162,10 @@
             android:imeOptions="actionSend"
             android:layout_marginBottom="40dp"/>
 
-
     </LinearLayout>
 
-    <!-- Game Screen -->
+
+    <!-- GAME SCREEN -->
      <LinearLayout
          android:layout_width="match_parent"
          android:layout_height="match_parent"
@@ -190,7 +184,6 @@
                  <FrameLayout
                      android:layout_width="match_parent"
                      android:layout_height="wrap_content">
-
                      <ProgressBar
                          android:id="@+id/target_distance_progress"
                          android:layout_width="match_parent"
@@ -234,7 +227,6 @@
                          android:layout_weight="5"
                          tools:context=".GameMapActivity"
                          android:name="com.google.android.gms.maps.SupportMapFragment" />
-
                      <LinearLayout
                          android:id="@+id/killed_gray_overlay_layout"
                          android:layout_width="match_parent"
@@ -324,6 +316,7 @@
                              android:layout_height="wrap_content"
                              android:visibility="gone"/>
 
+                         <!-- GAME SCOREBOARD -->
                          <LinearLayout
                              android:id="@+id/scoreboard_layout"
                              android:layout_width="match_parent"
@@ -366,31 +359,33 @@
                              </ListView>
                          </LinearLayout>
 
+                         <!-- GAME CHAR -->
                          <LinearLayout
                              android:id="@+id/game_chat_layout"
                              android:layout_width="match_parent"
-                             android:layout_height="wrap_content"
+                             android:layout_height="match_parent"
                              android:orientation="vertical"
-                             android:background="#aa000000"
+                             android:background="#dd000000"
                              android:visibility="gone">
                              <ListView
                                  android:id="@+id/game_chat_list"
                                  android:layout_width="match_parent"
-                                 android:layout_height="200dp"
+                                 android:layout_height="0dp"
+                                 android:layout_weight="5"
                                  android:transcriptMode="normal">
                              </ListView>
                              <EditText
                                  android:id="@+id/chat_game_input"
                                  android:layout_width="match_parent"
-                                 android:layout_height="40dp"
+                                 android:layout_height="0dp"
+                                 android:layout_weight="1"
                                  android:inputType="textAutoComplete"
                                  android:hint="Chat with other players"
                                  android:imeOptions="actionSend"
-                                 android:layout_marginBottom="40dp"/>
+                                 android:layout_marginBottom="160dp"/>
                          </LinearLayout>
 
                      </LinearLayout>
-
 
                      <Button
                          android:layout_width="match_parent"
@@ -421,7 +416,6 @@
                          android:text="HUNTER: "
                          android:layout_weight="1"/>
                  </LinearLayout>
-
             </LinearLayout>
 
             <!-- Been killed overlay -->
@@ -434,8 +428,6 @@
                  android:background="#aa000000"
                  android:focusable="true"
                  android:clickable="true">
-
-
 
                  <LinearLayout
                      android:id="@+id/game_over"

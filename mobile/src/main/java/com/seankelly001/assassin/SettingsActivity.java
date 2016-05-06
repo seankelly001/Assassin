@@ -100,10 +100,12 @@ public class SettingsActivity extends Activity implements View.OnClickListener {
     private void setImage(String image_path) {
 
         BitmapFactory.Options options = new BitmapFactory.Options();
-       // options.inJustDecodeBounds = true;
         options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(image_path, options);
+        options.inSampleSize = calculateInSampleSize(options, 300, 300);
+        options.inJustDecodeBounds = false;
         Bitmap bitmap = BitmapFactory.decodeFile(image_path, options);
-
         ImageView selected_photo_view = (ImageView) findViewById(R.id.selected_photo_view);
         selected_photo_view.setImageBitmap(bitmap);
     }
@@ -144,5 +146,29 @@ public class SettingsActivity extends Activity implements View.OnClickListener {
 
         Log.e("#####", s);
         Toast.makeText(this, s, Toast.LENGTH_SHORT).show();
+    }
+
+
+    public int calculateInSampleSize(
+            BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        // Raw height and width of image
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            // Calculate the largest inSampleSize value that is a power of 2 and keeps both
+            // height and width larger than the requested height and width.
+            while ((halfHeight / inSampleSize) > reqHeight
+                    && (halfWidth / inSampleSize) > reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+
+        return inSampleSize;
     }
 }

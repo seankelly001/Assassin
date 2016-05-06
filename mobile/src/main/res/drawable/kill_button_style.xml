@@ -14,7 +14,7 @@
     <item android:state_enabled="false">
         <shape>
             <solid
-                android:color="@color/disabled_red"/>
+                android:color="@color/gray"/>
             <stroke
                 android:width="3dp"
                 android:color="@color/black"/>

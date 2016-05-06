@@ -39,6 +39,8 @@ public class AboutGameActivity extends Activity implements View.OnClickListener 
             findViewById(id).setOnClickListener(this);
         }
 
+
+
     }
 
     @Override
@@ -73,6 +75,7 @@ public class AboutGameActivity extends Activity implements View.OnClickListener 
                 collapse(vv);
         }
     }
+
 
     public static void expand(final View v) {
         v.measure(RadioGroup.LayoutParams.MATCH_PARENT, RadioGroup.LayoutParams.WRAP_CONTENT);

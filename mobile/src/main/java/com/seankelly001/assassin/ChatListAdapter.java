@@ -37,6 +37,10 @@ public class ChatListAdapter extends ArrayAdapter<Pair<String, String>> {
         chat_player.setText(player_name);
         chat_text.setText(chat_string);
 
+        if(player_name.equals("")) {
+            chat_text.setTextColor(getContext().getResources().getColor(R.color.AccentColor));
+        }
+
         return view;
     }
 }

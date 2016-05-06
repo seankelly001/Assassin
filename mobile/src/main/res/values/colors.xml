@@ -8,9 +8,7 @@
 
     <color name="progress_yellow">#FFCC33</color>
     <color name="progress_red">#FF0000</color>
-
     <color name="pressed_red">#FF0022</color>
-
     <color name="disabled_red">#bb0000</color>
 
     <color name="progress_light_blue">#33CCFF</color>

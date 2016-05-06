@@ -5,5 +5,5 @@ package com.seankelly001.assassin;
  */
 public enum GameState {
 
-     NOT_IN_GAME, IN_LOBBY, GAME_STARTED, GAME_INPROGRESS, GAME_ENDED;
+     NOT_IN_GAME, IN_LOBBY, GAME_INPROGRESS, GAME_ENDED;
 }
