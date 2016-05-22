@@ -1,58 +1,49 @@
+/* This class is used to draw and update the in-game map
+ */
+
 package com.seankelly001.assassin;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.LevelListDrawable;
-import android.hardware.GeomagneticField;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.location.Location;
-import android.location.LocationListener;
 import android.util.Log;
-
-import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-/**
- * Created by Sean on 01/03/2016.
- */
-public class MapTools {
+public class MapUtils {
 
+    final static String TAG = "ASSASSIN";
     private GoogleMap mMap;
-    private GoogleApiClient mGoogleApiClient;
-
     private Location mLastLocation;
     private int zoom_level = 18;
     private float old_heading = 0;
-    private Marker arrow_marker;
-    private Marker direction_marker;
-    private float mDeclination;
+    private Marker arrow_marker, direction_marker;
     private Location destLocation;
     private boolean destReceived = false;
     private final boolean ROTATION_VECTOR_SUPPORTED;
     private final Context context;
 
-    public MapTools(Context context, GoogleMap mMap, GoogleApiClient mGoogleApiClient, boolean ROTATION_VECTOR_SUPPORTED) {
+    public MapUtils(Context context, GoogleMap mMap, boolean ROTATION_VECTOR_SUPPORTED) {
 
         this.context = context;
         this.mMap = mMap;
-        this.mGoogleApiClient = mGoogleApiClient;
         this.ROTATION_VECTOR_SUPPORTED = ROTATION_VECTOR_SUPPORTED;
         destLocation = new Location("");
     }
 
 
+    //Set coordinates to destination i.e. your target
     public void setDestCoordinates(double lat, double lng) {
 
         destLocation.setLatitude(lat);
@@ -61,9 +52,10 @@ public class MapTools {
     }
 
 
+    //Update the map with location
     public void updateMap(Location current_location) {
 
-        Log.v("#######", "UPDATING MAP");
+        Log.v(TAG, "UPDATING MAP");
         if(mMap != null && current_location != null){
 
             mLastLocation = current_location;
@@ -73,13 +65,16 @@ public class MapTools {
     }
 
 
+    //Update the makers on the map
     private void updateMapMarkers(Location current_location) {
 
         LatLng current_lat_lang = new LatLng(current_location.getLatitude(), current_location.getLongitude());
 
+        //If markers are not drawn yet
         if(arrow_marker == null) {
 
             Bitmap small_b;
+            //Only some phones can display your direction
             if(ROTATION_VECTOR_SUPPORTED) {
 
                 Drawable d = context.getResources().getDrawable(R.drawable.arrow);
@@ -87,6 +82,7 @@ public class MapTools {
                 Bitmap b = bd.getBitmap();
                 small_b = Bitmap.createScaledBitmap(b, b.getWidth() / 6, b.getHeight() / 6, false);
             }
+            //For phones that can't display direction, draw a dot instead
             else {
 
                 Drawable d = context.getResources().getDrawable(R.drawable.position_icon_orange);
@@ -95,6 +91,7 @@ public class MapTools {
                 small_b = Bitmap.createScaledBitmap(b, b.getWidth() / 20, b.getHeight() / 20, false);
             }
 
+            //Draw the arrow (or dot)
             arrow_marker = mMap.addMarker(
                     new MarkerOptions()
                             .position(current_lat_lang)
@@ -102,35 +99,20 @@ public class MapTools {
                             .icon(BitmapDescriptorFactory.fromBitmap(small_b)));
 
         }
-        else {
-
+        //If already drawn, update its position
+        else
             arrow_marker.setPosition(current_lat_lang);
-        }
-
-        //=====================================================================================
-        //Log.e("HEADING", "old heading: " + heading);
-        //Log.e("HEADING", "current location: " + current_location.getLatitude() + ", " + current_location.getLongitude());
-
-        Location galwayL = new Location("");
-        galwayL.setLatitude(53.2750164596357);
-        galwayL.setLongitude(-9.052734370000053);
-
-        Location dcuL = new Location("");
-        dcuL.setLatitude(53.385381);
-        dcuL.setLongitude(-6.258854);
 
         if(destReceived) {
+
+            //Calculate bearing from current location to destination
             float bearing = current_location.bearingTo(destLocation);
-            Log.v("HEADING", "bearing 1: " + bearing);
-
-            //bearing = Math.round((-bearing / 360) + 180);
             bearing = (bearing + 360) % 360;
-            Log.v("HEADING", "bearing 2: " + bearing);
 
+            //Calculate how much rotation is needed
             float rotation = bearing - old_heading;
-           // rotation -= 45.0;
-            Log.v("HEADING", "rotation: " + rotation);
 
+            //If the direction marker isn't made yet, draw it
             if (direction_marker == null) {
 
                 Drawable d = context.getResources().getDrawable(R.drawable.arc_final);
@@ -141,9 +123,7 @@ public class MapTools {
                 direction_marker = mMap.addMarker(
                         new MarkerOptions()
                                 .title("Current Location")
-                                        //.icon(BitmapDescriptorFactory.fromResource(R.drawable.arc_final).w)
                                 .icon(BitmapDescriptorFactory.fromBitmap(small_b))
-                               // .anchor(0.5f, 0.5f)
                                 .rotation(rotation)
                                 .position(current_lat_lang)
                 );
@@ -157,6 +137,7 @@ public class MapTools {
     }
 
 
+    //Center the camera on your position
     private void centerCamera(Location current_location) {
 
         LatLng current_lat_lng = new LatLng(current_location.getLatitude(), current_location.getLongitude());
@@ -166,40 +147,36 @@ public class MapTools {
     }
 
 
-    //====================================================================================
+    //Called when rotation changes (if applicable)
     public void onSensorChanged(SensorEvent sensorEvent) {
 
         if(mMap != null && mLastLocation != null) {
             synchronized (this) {
-
                 if (sensorEvent.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
 
+                    //Calculate your heading
                     float[] mRotationMatrix = new float[16];
                     SensorManager.getRotationMatrixFromVector(
                             mRotationMatrix, sensorEvent.values);
                     float[] orientation = new float[3];
                     SensorManager.getOrientation(mRotationMatrix, orientation);
-                    float heading = (float) Math.toDegrees(orientation[0]) + mDeclination;
+                    float heading = (float) Math.toDegrees(orientation[0]);
 
-
+                    //Only change rotation if rotation changes by more than 1 degree to prevent lag
                     if (Math.abs(heading - old_heading) > 1) {
 
+                        //Update camera rotation
                         old_heading = heading;
                         updateCameraRotation(heading);
                         updateMap(mLastLocation);
                     }
                 }
-
-                /*
-                if (sensorEvent.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-                    magneticX.setText(Float.toString(sensorEvent.values[0]));
-                    magneticY.setText(Float.toString(sensorEvent.values[1]));
-                }*/
             }
         }
     }
 
 
+    //Change the camera rotation so that it corresponds to the direction you are facing
     private void updateCameraRotation(float bearing) {
 
         if(mMap != null) {
@@ -208,16 +185,4 @@ public class MapTools {
             mMap.moveCamera(CameraUpdateFactory.newCameraPosition(pos));
         }
     }
-
-
-    private double euclidean_distance(double x1, double y1, double x2, double y2) {
-
-        double x = Math.pow((x1 - x2), 2);
-        double y = Math.pow((y1 - y2), 2);
-        double result = Math.sqrt(x + y);
-        return result;
-    }
-
-
-
 }

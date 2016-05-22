@@ -1,25 +1,27 @@
+/* This class is mostly used by the host player to keep track of all players and their
+targets and hunters
+ */
+
 package com.seankelly001.assassin;
 
 import android.graphics.Bitmap;
-
 import com.google.android.gms.games.multiplayer.Participant;
 
-/**
- * Created by Sean on 31/03/2016.
- */
+
 public class Player implements Comparable<Player>{
 
     private final Participant participant;
     private Player target, hunter;
     private Bitmap picture;
     private int kills = 0, deaths = 0;
-    private double kdr = 0;
+    private double kdr = 0.0;
 
     public Player(Participant participant) {
 
         this.participant = participant;
     }
 
+    //Increment number of kills and deaths each player has
     public void incrementKills() {kills++; calculateKdr();}
 
     public void incrementDeaths() {deaths++; calculateKdr();}
@@ -32,10 +34,12 @@ public class Player implements Comparable<Player>{
             kdr = kills/deaths;
     }
 
-
+    //Getters and setters
     public Participant getParticipant() {
         return participant;
     }
+
+    public String getDisplayName() { return participant.getDisplayName();}
 
     public String getId() {
         return participant.getParticipantId();

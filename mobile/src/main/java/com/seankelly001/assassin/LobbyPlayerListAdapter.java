@@ -1,8 +1,9 @@
+/* This method is used to create the list of players in the lobby */
+
 package com.seankelly001.assassin;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -15,9 +16,7 @@ import com.google.android.gms.games.multiplayer.Participant;
 import java.util.HashMap;
 import java.util.List;
 
-/**
- * Created by Sean on 27/02/2016.
- */
+
 public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
 
     private static HashMap<String, Boolean> ready_players_map;
@@ -32,6 +31,7 @@ public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
         this.listener = listener;
     }
 
+
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
 
@@ -45,41 +45,17 @@ public class LobbyPlayerListAdapter extends ArrayAdapter<Participant> {
         player_name_text_view.setText(player_name);
 
         final String player_id = player.getParticipantId();
-
         final CheckBox player_ready_checkbox_view = (CheckBox) view.findViewById(R.id.lobby_player_ready_checkbox);
         player_ready_checkbox_view.setEnabled(false);
 
-        Log.e("#####", "Lobby getView, my id is: " + mMyId);
-        Log.e("#####", "Lobby getView, playerid is: " + player_id);
-
+        //If row corresponds to your player, change its colour and enable the checkbox
         if(player_id.equals(mMyId)) {
-
 
             player_ready_checkbox_view.setEnabled(true);
             player_ready_checkbox_view.setOnClickListener(listener);
             player_name_text_view.setTextColor(Color.RED);
-
-
-            /*
-            player_ready_checkbox_view.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    boolean ready = player_ready_checkbox_view.isChecked();
-                    //ready_players_list.set(position, ready);
-                    ready_players_map.put(player_id, ready);
-
-                    Context context = v.getContext();
-                    Toast.makeText(context, "INNER CLICK", Toast.LENGTH_LONG).show();
-
-                }
-
-            });*/
         }
 
         return view;
     }
-
-
-
-
 }

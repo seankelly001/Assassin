@@ -1,20 +1,19 @@
+/* Class used to create in game scoreboard
+
+ */
+
 package com.seankelly001.assassin;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.graphics.drawable.Drawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.TextView;
-
 import java.util.ArrayList;
-import java.util.List;
 
-/**
- * Created by Sean on 13/04/2016.
- */
+
 public class ScoreboardPlayerAdapter extends ArrayAdapter<Player> {
 
     private String mMyId, winnder_id;
@@ -35,6 +34,7 @@ public class ScoreboardPlayerAdapter extends ArrayAdapter<Player> {
 
         Player p = getItem(position);
 
+        //Get the player information and populate the scoreboard row
         String player_id = p.getId();
         String player_name = p.getParticipant().getDisplayName();
         int player_kills = p.getKills();
@@ -54,6 +54,7 @@ public class ScoreboardPlayerAdapter extends ArrayAdapter<Player> {
         //Current player row is me
         if(player_id.equals(mMyId))
             player_name_view.setTextColor(Color.RED);
+        //If there is a winnder (game is over), set different background to indicate this
         if(winnder_id != null && winnder_id.equals(player_id))
             view.setBackgroundResource(R.drawable.scoreboard_row_winnder_background);
         return view;

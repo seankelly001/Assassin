@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 
+<!-- This file contains the UI code for all of the main screen, lobby screen and in-gane screen -->
 
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
@@ -225,7 +226,7 @@
                          android:layout_width="match_parent"
                          android:layout_height="wrap_content"
                          android:layout_weight="5"
-                         tools:context=".GameMapActivity"
+                         tools:context=".MainActivity"
                          android:name="com.google.android.gms.maps.SupportMapFragment" />
                      <LinearLayout
                          android:id="@+id/killed_gray_overlay_layout"
